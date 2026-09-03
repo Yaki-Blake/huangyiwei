@@ -1,0 +1,4 @@
+# 仅超过 GitHub 单文件上限(100MB)的文件走 Git LFS
+# 注意：GitHub Pages 不提供 LFS 文件内容，
+# 因此只有真正超限的文件才进 LFS，其余媒体保持普通 Git 存储以便网页正常加载。
+1_h264.mp4 filter=lfs diff=lfs merge=lfs -text
