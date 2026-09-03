@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="坤坤宗门内战">
+<meta name="format-detection" content="telephone=no">
+<title>坤坤宗门内战</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+    background: #000;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
+  }
+
+  #gameContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* 背景视频 */
+  #bgVideo {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--bg-pos, center center);
+    transform: scale(var(--bg-scale, 1));
+    transform-origin: center center;
+    z-index: 0;
+  }
+
+  /* 游戏画布 */
+  #gameCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    display: none;
+    background: linear-gradient(to bottom, #0a0a2e, #16213e, #1a1a2e);
+    touch-action: none;
+  }
+
+  /* 主菜单 */
+  #mainMenu {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+  }
+
+  .menu-buttons {
+    position: absolute;
+    top: 75%;
+    left: 0;
+    width: 100%;
+    height: clamp(48px, 8vh, 70px);
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4%;
+    gap: 6px;
+  }
+
+  .menu-btn {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    min-height: 48px;
+    background: white;
+    border: 3px solid #0066cc;
+    border-radius: 8px;
+    color: black;
+    font-size: clamp(13px, 3.6vw, 22px);
+    font-weight: bold;
+    cursor: pointer;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+    transition: all 0.2s;
+    padding: 0 4px;
+    line-height: 1.1;
+    word-break: break-all;
+  }
+  .menu-btn:hover { background: #e6f0ff; transform: scale(1.05); }
+  .menu-btn:active { background: #cce0ff; transform: scale(0.96); }
+
+  /* 排行榜（弹窗模式） */
+  #leaderboardDialog {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90vw, 360px);
+    max-height: 80vh;
+    overflow-y: auto;
+    background: rgba(255,255,255,0.98);
+    border: 3px solid #0066cc;
+    border-radius: 12px;
+    padding: 25px 20px;
+    z-index: 200;
+    display: none;
+  }
+  #leaderboardDialog h3 {
+    text-align: center;
+    color: #0066cc;
+    margin-bottom: 15px;
+    font-size: clamp(18px, 5vw, 24px);
+  }
+  .lb-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+    font-size: clamp(14px, 4vw, 17px);
+  }
+  .lb-rank { font-weight: bold; color: #0066cc; width: 36px; }
+  .lb-name { flex: 1; text-align: left; padding-left: 10px; word-break: break-all; }
+  .lb-score { font-weight: bold; color: #cc0000; }
+  #leaderboardDialog .close-lb {
+    display: block;
+    margin: 18px auto 0;
+    padding: 10px 30px;
+    min-height: 44px;
+  }
+
+  /* 纯享视频提示 */
+  #videoModeHint {
+    position: absolute;
+    top: calc(20px + env(safe-area-inset-top));
+    right: calc(20px + env(safe-area-inset-right));
+    background: white;
+    border: 3px solid #0066cc;
+    border-radius: 8px;
+    padding: 12px 22px;
+    color: black;
+    font-size: clamp(14px, 4vw, 18px);
+    font-weight: bold;
+    z-index: 10;
+    display: none;
+    cursor: pointer;
+    min-height: 44px;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+  }
+  #videoModeHint:active { background: #cce0ff; }
+
+  /* 暂停菜单 */
+  #pauseMenu {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90vw, 320px);
+    max-height: 85vh;
+    overflow-y: auto;
+    background: rgba(255,255,255,0.98);
+    border: 3px solid #0066cc;
+    border-radius: 12px;
+    padding: 30px 20px;
+    z-index: 100;
+    display: none;
+  }
+  #pauseMenu h2 {
+    text-align: center;
+    color: #0066cc;
+    margin-bottom: 25px;
+    font-size: clamp(22px, 6vw, 28px);
+  }
+  .pause-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin: 10px 0;
+    background: white;
+    border: 2px solid #0066cc;
+    border-radius: 6px;
+    color: black;
+    font-size: clamp(15px, 4.5vw, 18px);
+    font-weight: bold;
+    cursor: pointer;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+    min-height: 48px;
+  }
+  .pause-btn:hover { background: #e6f0ff; }
+  .pause-btn:active { background: #cce0ff; }
+
+  /* 游戏结束对话框 */
+  #gameOverDialog {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(90vw, 380px);
+    max-height: 85vh;
+    overflow-y: auto;
+    background: rgba(255,255,255,0.98);
+    border: 3px solid #cc0000;
+    border-radius: 12px;
+    padding: 25px;
+    z-index: 100;
+    display: none;
+    text-align: center;
+  }
+  #gameOverDialog h2 {
+    color: #cc0000;
+    margin-bottom: 15px;
+    font-size: clamp(20px, 5.5vw, 24px);
+  }
+  #gameOverDialog .final-score {
+    font-size: clamp(18px, 5vw, 24px);
+    font-weight: bold;
+    color: #0066cc;
+    margin: 15px 0;
+  }
+  #nameInput {
+    width: 80%;
+    padding: 10px 12px;
+    font-size: 16px; /* 16px 防止 iOS 聚焦时自动放大 */
+    border: 2px solid #0066cc;
+    border-radius: 6px;
+    margin: 10px 0;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+  }
+  .dlg-btn {
+    padding: 12px 25px;
+    margin: 10px 5px;
+    background: white;
+    border: 2px solid #0066cc;
+    border-radius: 6px;
+    color: black;
+    font-size: clamp(14px, 4vw, 16px);
+    font-weight: bold;
+    cursor: pointer;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+    min-height: 44px;
+  }
+  .dlg-btn:hover { background: #e6f0ff; }
+  .dlg-btn:active { background: #cce0ff; }
+
+  /* 覆盖层（暂停时用） */
+  #overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    display: none;
+  }
+
+  /* 理智显示 */
+  #sanityDisplay {
+    position: absolute;
+    top: calc(15px + env(safe-area-inset-top));
+    left: calc(15px + env(safe-area-inset-left));
+    z-index: 10;
+    display: none;
+    max-width: 60vw;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .sanity-char {
+    font-size: clamp(14px, 4vw, 22px);
+    color: black;
+    font-weight: bold;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    letter-spacing: -2px;
+    display: inline-block;
+    margin-right: 2px;
+    padding: 3px 2px;
+    background: rgba(255,255,255,0.7);
+    border-radius: 4px;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+  }
+  .sanity-char.hurt { color: red; }
+
+  /* 击杀数显示 */
+  #killCounter {
+    position: absolute;
+    bottom: calc(15px + env(safe-area-inset-bottom));
+    left: calc(15px + env(safe-area-inset-left));
+    z-index: 10;
+    background: rgba(255,255,255,0.85);
+    border: 2px solid #0066cc;
+    border-radius: 8px;
+    padding: 8px 15px;
+    font-size: clamp(16px, 4.5vw, 22px);
+    font-weight: bold;
+    color: #0066cc;
+    display: none;
+    pointer-events: none;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+  }
+
+  /* 分数显示 */
+  #scoreDisplay {
+    position: absolute;
+    top: calc(15px + env(safe-area-inset-top));
+    right: calc(15px + env(safe-area-inset-right));
+    z-index: 10;
+    background: rgba(255,255,255,0.85);
+    border: 2px solid #cc0000;
+    border-radius: 8px;
+    padding: 8px 15px;
+    font-size: clamp(16px, 4.5vw, 22px);
+    font-weight: bold;
+    color: #cc0000;
+    display: none;
+    pointer-events: none;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+  }
+
+  /* 道具状态显示 */
+  #buffsDisplay {
+    position: absolute;
+    top: calc(90px + env(safe-area-inset-top));
+    right: calc(20px + env(safe-area-inset-right));
+    z-index: 10;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    width: min(45vw, 170px);
+    max-height: 60vh;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .buff-item {
+    background: rgba(255,255,255,0.92);
+    border: 2px solid #00aa00;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: clamp(12px, 3.5vw, 16px);
+    font-weight: bold;
+    color: #006600;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+    text-align: center;
+    line-height: 1.4;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .buff-item.shield { border-color: #0088ff; color: #004488; border-width: 3px; }
+  .buff-item.rapid { border-color: #ff8800; color: #884400; border-width: 3px; }
+  .buff-item.umbrella { border-color: #aa00aa; color: #660066; border-width: 3px; }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <video id="bgVideo" autoplay loop playsinline>
+    <source src="BEIJIN.mp4" type="video/mp4">
+  </video>
+
+  <!-- 游戏BGM -->
+  <audio id="bgmAudio" loop preload="auto">
+    <source src="kunkun.aac" type="audio/aac">
+  </audio>
+  <!-- Boss音效 -->
+  <audio id="bossSfx" preload="auto">
+    <source src="niganma.mp3" type="audio/mpeg">
+  </audio>
+  <!-- 死亡音效 -->
+  <audio id="dieSfx" preload="auto">
+    <source src="die.mp3" type="audio/mpeg">
+  </audio>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="mainMenu">
+    <div class="menu-buttons">
+      <button class="menu-btn" onclick="startGame('idol')">偶像模式</button>
+      <button class="menu-btn" onclick="startPureVideo()">纯享视频</button>
+      <button class="menu-btn" onclick="startGame('hater')">黑子模式</button>
+      <button class="menu-btn" onclick="openLeaderboardDialog()">🏆 排行榜</button>
+    </div>
+  </div>
+
+  <!-- 主菜单排行榜弹窗 -->
+  <div id="leaderboardDialog">
+    <h3>🏆 排行榜</h3>
+    <div id="lbList"></div>
+    <button class="dlg-btn close-lb" onclick="closeLeaderboardDialog()">关闭</button>
+  </div>
+
+  <div id="videoModeHint" onclick="exitPureVideo()">点击 / ESC 退出</div>
+
+  <div id="sanityDisplay"></div>
+  <div id="killCounter">0/30</div>
+  <div id="scoreDisplay">分数: 0</div>
+  <div id="buffsDisplay"></div>
+
+  <div id="overlay"></div>
+
+  <div id="pauseMenu">
+    <h2>游戏暂停</h2>
+    <button class="pause-btn" onclick="resumeGame()">返回游戏</button>
+    <button class="pause-btn" onclick="showPauseLeaderboard()">排行榜</button>
+    <button class="pause-btn" onclick="quitAndRank()">退出游戏并排名</button>
+  </div>
+
+  <div id="gameOverDialog">
+    <h2>游戏结束</h2>
+    <div class="final-score" id="finalScoreText">分数: 0</div>
+    <div id="rankPrompt" style="display:none;">
+      <p style="color:#0066cc; font-weight:bold;">恭喜进入排行榜！请输入名字：</p>
+      <input type="text" id="nameInput" maxlength="10" placeholder="请输入名字" onkeydown="if(event.key==='Enter')confirmGameOver()">
+    </div>
+    <div>
+      <button class="dlg-btn" onclick="confirmGameOver()">确认</button>
+      <button class="dlg-btn" onclick="backToMenu()">返回菜单</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 全局变量 ====================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0;
+
+function resizeCanvas() {
+  // 使用容器实际尺寸（适配 100dvh / 移动端地址栏伸缩）
+  const rect = document.getElementById('gameContainer').getBoundingClientRect();
+  W = canvas.width = Math.max(1, Math.floor(rect.width));
+  H = canvas.height = Math.max(1, Math.floor(rect.height));
+}
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 120));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resizeCanvas);
+  window.visualViewport.addEventListener('scroll', resizeCanvas);
+}
+resizeCanvas();
+
+// 游戏状态
+const STATE = { MENU: 0, PLAYING: 1, PAUSED: 2, GAMEOVER: 3, PUREVIDEO: 4 };
+let gameState = STATE.MENU;
+let gameMode = 'idol'; // 'idol' or 'hater'
+
+// 资源图片
+const images = {};
+function loadImage(name, src) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => { images[name] = img; resolve(); };
+    img.onerror = () => {
+      // 加载失败时使用占位图
+      images[name] = createPlaceholder(name);
+      resolve();
+    };
+    img.src = src;
+  });
+}
+function createPlaceholder(name) {
+  const c = document.createElement('canvas');
+  c.width = 60; c.height = 60;
+  const cx = c.getContext('2d');
+  const colors = { ZHONGFENJI:'#00aa00', JIDAN:'#d4a574', KUNKUN:'#ffcc00', boss:'#aa0000' };
+  cx.fillStyle = colors[name] || '#888';
+  cx.fillRect(0,0,60,60);
+  cx.strokeStyle = '#000';
+  cx.lineWidth = 2;
+  cx.strokeRect(0,0,60,60);
+  cx.fillStyle = '#fff';
+  cx.font = 'bold 12px Microsoft YaHei';
+  cx.textAlign = 'center';
+  cx.fillText(name, 30, 34);
+  const img = new Image();
+  img.src = c.toDataURL();
+  return img;
+}
+
+// 篮球子弹占位图
+let bulletImg = null;
+function createBulletImg() {
+  const c = document.createElement('canvas');
+  c.width = 20; c.height = 20;
+  const cx = c.getContext('2d');
+  // 橙色篮球
+  cx.fillStyle = '#ff6600';
+  cx.beginPath();
+  cx.arc(10,10,9,0,Math.PI*2);
+  cx.fill();
+  cx.strokeStyle = '#000';
+  cx.lineWidth = 1.5;
+  cx.beginPath();
+  cx.arc(10,10,9,0,Math.PI*2);
+  cx.stroke();
+  // 篮球线
+  cx.beginPath();
+  cx.moveTo(1,10); cx.lineTo(19,10);
+  cx.moveTo(10,1); cx.lineTo(10,19);
+  cx.stroke();
+  const img = new Image();
+  img.src = c.toDataURL();
+  return img;
+}
+
+// ==================== 音效系统（Web Audio 合成） ====================
+let _audioCtx = null;
+let _audioUnlocked = false;
+function ensureAudioUnlocked() {
+  if (_audioUnlocked) return;
+  try {
+    if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    // 放一个无声音确认解锁
+    const o = _audioCtx.createOscillator();
+    const g = _audioCtx.createGain();
+    g.gain.value = 0;
+    o.connect(g); g.connect(_audioCtx.destination);
+    o.start(); o.stop(_audioCtx.currentTime + 0.01);
+    _audioUnlocked = true;
+  } catch {}
+}
+function _beep({type='sine', freq=440, dur=0.1, vol=0.2, sweepTo=null, delay=0, noise=false, noiseDur=null}) {
+  if (!_audioCtx) return;
+  const t0 = _audioCtx.currentTime + delay;
+  if (noise) {
+    // 白噪声爆破（用于爆炸/击中）
+    const bufSize = Math.floor(_audioCtx.sampleRate * (noiseDur ?? dur));
+    const buffer = _audioCtx.createBuffer(1, bufSize, _audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) {
+      // 带衰减
+      const k = 1 - i / bufSize;
+      data[i] = (Math.random() * 2 - 1) * k * k;
+    }
+    const src = _audioCtx.createBufferSource();
+    src.buffer = buffer;
+    const g = _audioCtx.createGain();
+    g.gain.value = vol;
+    // 低通滤波器让声音更沉闷像爆炸
+    const bp = _audioCtx.createBiquadFilter();
+    bp.type = 'lowpass';
+    bp.frequency.value = sweepTo ? sweepTo : 800;
+    src.connect(bp); bp.connect(g); g.connect(_audioCtx.destination);
+    src.start(t0);
+    return;
+  }
+  const o = _audioCtx.createOscillator();
+  const g = _audioCtx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t0);
+  if (sweepTo != null) {
+    o.frequency.exponentialRampToValueAtTime(Math.max(1, sweepTo), t0 + dur);
+  }
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0 + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(_audioCtx.destination);
+  o.start(t0);
+  o.stop(t0 + dur + 0.02);
+}
+// 具体音效
+const SFX = {
+  shoot()       { _beep({type:'square',   freq:880,  sweepTo:1400, dur:0.06, vol:0.08}); },
+  enemyShoot()  { _beep({type:'triangle', freq:300,  sweepTo:180,  dur:0.07, vol:0.07}); },
+  hit()         { _beep({noise:true, noiseDur:0.08, vol:0.25, sweepTo:1200}); },
+  explode()     { _beep({noise:true, noiseDur:0.25, vol:0.35, sweepTo:400});
+                  _beep({type:'sawtooth', freq:120, sweepTo:40, dur:0.2, vol:0.12, delay:0.02}); },
+  bossExplode() { _beep({noise:true, noiseDur:0.6, vol:0.45, sweepTo:250});
+                  _beep({type:'sawtooth', freq:80, sweepTo:30, dur:0.5, vol:0.2}); },
+  pickup()      { _beep({type:'sine',     freq:600,  sweepTo:1200, dur:0.12, vol:0.18});
+                  _beep({type:'sine',     freq:1200, sweepTo:1800, dur:0.1,  vol:0.14, delay:0.08}); },
+  hurt()        { _beep({type:'square',   freq:180,  sweepTo:60,   dur:0.18, vol:0.22}); },
+  bossAppear()  { for (let i=0;i<3;i++) _beep({type:'square',freq:440*(i+1),dur:0.15,vol:0.18,delay:i*0.18}); },
+  gameOver()    { _beep({type:'sawtooth',freq:400,sweepTo:80,dur:0.6,vol:0.22}); },
+  start()       { _beep({type:'triangle',freq:523,dur:0.1,vol:0.18});
+                  _beep({type:'triangle',freq:659,dur:0.1,vol:0.18,delay:0.1});
+                  _beep({type:'triangle',freq:784,dur:0.14,vol:0.18,delay:0.2}); },
+  click()       { _beep({type:'square',  freq:1000,dur:0.03,vol:0.1}); },
+};
+
+// 视频声音解锁（浏览器不允许自动带声音播放，首次用户交互后开启）
+let _videoSoundUnlocked = false;
+function ensureVideoWithSound() {
+  if (_videoSoundUnlocked) return;
+  const v = document.getElementById('bgVideo');
+  if (!v) return;
+  try {
+    v.muted = false;
+    v.volume = 0.8;
+    const p = v.play();
+    if (p && p.catch) p.catch(() => { v.muted = true; });
+    _videoSoundUnlocked = true;
+  } catch { v.muted = true; }
+}
+// 全局首次交互监听（任何点击/触摸都解锁）
+document.addEventListener('pointerdown', function firstInteract() {
+  ensureAudioUnlocked();
+  ensureVideoWithSound();
+}, { once: false });
+
+// ==================== BGM / Boss音效 控制 ====================
+const bgmAudio = document.getElementById('bgmAudio');
+const bossSfx = document.getElementById('bossSfx');
+const dieSfx = document.getElementById('dieSfx');
+bgmAudio.volume = 0.2;
+bossSfx.volume = 0.8;
+dieSfx.volume = 0.8;
+
+function startBGM() {
+  try {
+    bgmAudio.currentTime = 0;
+    bgmAudio.play().catch(()=>{});
+  } catch {}
+}
+function stopBGM() {
+  try {
+    bgmAudio.pause();
+    bgmAudio.currentTime = 0;
+  } catch {}
+}
+function playBossSfx() {
+  try {
+    bossSfx.currentTime = 0;
+    bossSfx.play().catch(()=>{});
+  } catch {}
+}
+function playDieSfx() {
+  try {
+    dieSfx.currentTime = 0;
+    dieSfx.play().catch(()=>{});
+  } catch {}
+}
+// 暂停/恢复BGM（用于暂停菜单）
+function pauseBGM() { try { bgmAudio.pause(); } catch {} }
+function resumeBGM() { try { bgmAudio.play().catch(()=>{}); } catch {} }
+
+// ==================== 游戏对象 ====================
+let player = null;
+let enemies = [];
+let bullets = [];      // 玩家子弹
+let enemyBullets = []; // 敌人子弹
+let items = [];        // 道具
+let particles = [];    // 粒子特效
+let boss = null;
+
+let killCount = 0;
+let totalKills = 0;
+let score = 0;
+let maxKillsForBoss = 30;
+let enemySpawnTimer = 0;
+let lastTime = 0;
+let animationId = null;
+
+// 玩家类
+class Player {
+  constructor(mode) {
+    const img = images.ZHONGFENJI;
+    const scale = Math.min(W, H) / 800;
+    this.w = 60 * scale;
+    this.h = 60 * scale * (img.height / img.width);
+    this.x = W / 2 - this.w / 2;
+    this.y = H - this.h - 30;
+    this.speed = 14 * scale;
+    this.hp = mode === 'hater' ? 3 : 5;
+    this.maxHp = this.hp;
+    this.shootCooldown = 0;
+    this.baseShootInterval = mode === 'hater' ? 180 : 220; // ms
+    this.shootInterval = this.baseShootInterval;
+    this.bulletSpeed = 10 * scale;
+    this.img = img;
+    // 道具buff
+    this.shieldTime = 0;
+    this.umbrellaTime = 0;
+    this.rapidStacks = []; // 每一层：{time, mult}
+    this.invincibleTime = 0; // 受伤后短暂无敌
+  }
+
+  update(dt) {
+    // 始终跟随鼠标移动
+    const tx = pointerX - this.w / 2;
+    const ty = pointerY - this.h / 2;
+    const dx = tx - this.x, dy = ty - this.y;
+    const d = Math.hypot(dx, dy);
+    const maxStep = this.speed * 4.0 * (dt / 16);
+    if (d > maxStep) {
+      this.x += dx / d * maxStep;
+      this.y += dy / d * maxStep;
+    } else {
+      this.x = tx;
+      this.y = ty;
+    }
+    this.x = Math.max(0, Math.min(W - this.w, this.x));
+    this.y = Math.max(0, Math.min(H - this.h, this.y));
+
+    // 冷却
+    this.shootCooldown -= dt;
+    if (this.invincibleTime > 0) this.invincibleTime -= dt;
+    if (this.shieldTime > 0) this.shieldTime -= dt;
+    if (this.umbrellaTime > 0) this.umbrellaTime -= dt;
+
+    // 攻速buff计算
+    let totalMult = 1;
+    this.rapidStacks = this.rapidStacks.filter(s => {
+      s.time -= dt;
+      if (s.time > 0) { totalMult *= s.mult; return true; }
+      return false;
+    });
+    this.shootInterval = this.baseShootInterval / totalMult;
+
+    // 射击
+    if (this.shootCooldown <= 0) {
+      this.shoot();
+      this.shootCooldown = this.shootInterval;
+    }
+  }
+
+  shoot() {
+    SFX.shoot();
+    const cx = this.x + this.w / 2;
+    const cy = this.y;
+    if (this.umbrellaTime > 0) {
+      // 伞状5条
+      const angles = [-20, -10, 0, 10, 20];
+      for (const a of angles) {
+        const rad = (a - 90) * Math.PI / 180;
+        bullets.push(new Bullet(cx, cy,
+          Math.cos(rad) * this.bulletSpeed,
+          Math.sin(rad) * this.bulletSpeed, true));
+      }
+    } else {
+      // 两条平行
+      bullets.push(new Bullet(cx - 12, cy, 0, -this.bulletSpeed, true));
+      bullets.push(new Bullet(cx + 12, cy, 0, -this.bulletSpeed, true));
+    }
+  }
+
+  takeDamage() {
+    if (this.shieldTime > 0 || this.invincibleTime > 0) return false;
+    this.hp--;
+    this.invincibleTime = 1000;
+    SFX.hurt();
+    updateSanityDisplay();
+    if (this.hp <= 0) {
+      gameOver();
+      return true;
+    }
+    return false;
+  }
+
+  draw() {
+    // 闪烁效果
+    if (this.invincibleTime > 0 && Math.floor(this.invincibleTime / 100) % 2 === 0) {
+      ctx.globalAlpha = 0.4;
+    }
+    ctx.drawImage(this.img, this.x, this.y, this.w, this.h);
+    ctx.globalAlpha = 1;
+    // 护盾效果
+    if (this.shieldTime > 0) {
+      ctx.strokeStyle = '#00aaff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(this.x + this.w/2, this.y + this.h/2, Math.max(this.w, this.h)/2 + 8, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(0,170,255,0.15)';
+      ctx.beginPath();
+      ctx.arc(this.x + this.w/2, this.y + this.h/2, Math.max(this.w, this.h)/2 + 8, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+}
+
+// 子弹类
+class Bullet {
+  constructor(x, y, vx, vy, fromPlayer) {
+    this.x = x; this.y = y;
+    this.vx = vx; this.vy = vy;
+    this.r = 8;
+    this.fromPlayer = fromPlayer;
+    this.dead = false;
+  }
+  update(dt) {
+    this.x += this.vx * (dt / 16);
+    this.y += this.vy * (dt / 16);
+    if (this.x < -20 || this.x > W + 20 || this.y < -20 || this.y > H + 20) this.dead = true;
+  }
+  draw() {
+    if (bulletImg) {
+      ctx.drawImage(bulletImg, this.x - this.r, this.y - this.r, this.r*2, this.r*2);
+    } else {
+      ctx.fillStyle = this.fromPlayer ? '#ff6600' : '#ff0000';
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+}
+
+// 敌机类
+class Enemy {
+  constructor(mode) {
+    const img = images.JIDAN;
+    const scale = Math.min(W, H) / 800;
+    this.w = 50 * scale;
+    this.h = 50 * scale * (img.height / img.width);
+    this.x = Math.random() * (W - this.w);
+    this.y = -this.h;
+    const baseSpeed = mode === 'hater' ? 4.5 : 3.0;
+    this.speed = baseSpeed + Math.random() * 1.5;
+    this.hp = 2;
+    this.img = img;
+    this.dead = false;
+    this.shootTimer = Math.random() * 1500;
+    this.shootInterval = mode === 'hater' ? 1000 : 1600;
+    this.bulletSpeed = (mode === 'hater' ? 9 : 7) * scale;
+    this.scale = scale;
+  }
+  update(dt) {
+    this.y += this.speed * (dt / 16);
+    if (this.y > H + 50) this.dead = true;
+    this.shootTimer -= dt;
+    if (this.shootTimer <= 0) {
+      this.shootTimer = this.shootInterval;
+      const cx = this.x + this.w / 2;
+      const cy = this.y + this.h;
+      enemyBullets.push(new Bullet(cx, cy, 0, this.bulletSpeed, false));
+      SFX.enemyShoot();
+    }
+  }
+  takeDamage() {
+    this.hp--;
+    if (this.hp <= 0) {
+      this.dead = true;
+      return true;
+    }
+    SFX.hit();
+    return false;
+  }
+  draw() {
+    ctx.drawImage(this.img, this.x, this.y, this.w, this.h);
+    // 血条
+    if (this.hp < 2) {
+      ctx.fillStyle = '#333';
+      ctx.fillRect(this.x, this.y - 6, this.w, 4);
+      ctx.fillStyle = '#00cc00';
+      ctx.fillRect(this.x, this.y - 6, this.w * (this.hp / 2), 4);
+    }
+  }
+}
+
+// Boss类
+class Boss {
+  constructor(mode) {
+    this.mode = mode;
+    const img = mode === 'hater' ? images.boss : images.KUNKUN;
+    const scale = Math.min(W, H) / 600;
+    this.w = 160 * scale;
+    this.h = 160 * scale * (img.height / img.width);
+    this.x = W / 2 - this.w / 2;
+    this.y = -this.h;
+    this.targetY = 50;
+    this.speed = 2;
+    this.hp = 60;
+    this.maxHp = 60;
+    this.img = img;
+    this.dead = false;
+    this.shootTimer = 0;
+    this.shootInterval = 900;
+    this.moveTimer = 0;
+    this.moveDir = 1;
+    this.scale = scale;
+    this.bulletSpeed = 4 * scale;
+  }
+  update(dt) {
+    // 入场
+    if (this.y < this.targetY) {
+      this.y += this.speed * (dt / 16);
+      return;
+    }
+    // 左右移动
+    this.moveTimer -= dt;
+    if (this.moveTimer <= 0) {
+      this.moveTimer = 1500 + Math.random() * 1500;
+      this.moveDir = Math.random() < 0.5 ? -1 : 1;
+    }
+    this.x += this.moveDir * this.speed * 1.2 * (dt / 16);
+    if (this.x < 10) { this.x = 10; this.moveDir = 1; }
+    if (this.x > W - this.w - 10) { this.x = W - this.w - 10; this.moveDir = -1; }
+
+    // 射击
+    this.shootTimer -= dt;
+    if (this.shootTimer <= 0) {
+      this.shootTimer = this.shootInterval;
+      const cx = this.x + this.w / 2;
+      const cy = this.y + this.h;
+      // 扇形5发
+      for (let i = -2; i <= 2; i++) {
+        const angle = i * 15;
+        const rad = (90 + angle) * Math.PI / 180;
+        enemyBullets.push(new Bullet(cx, cy,
+          Math.cos(rad) * this.bulletSpeed,
+          Math.sin(rad) * this.bulletSpeed, false));
+      }
+      SFX.enemyShoot();
+    }
+  }
+  takeDamage() {
+    this.hp--;
+    if (this.hp <= 0) {
+      this.dead = true;
+      score += 500;
+      return true;
+    }
+    SFX.hit();
+    return false;
+  }
+  draw() {
+    ctx.drawImage(this.img, this.x, this.y, this.w, this.h);
+    // 血条
+    const bw = W * 0.6;
+    const bx = (W - bw) / 2;
+    const by = 10;
+    ctx.fillStyle = '#333';
+    ctx.fillRect(bx - 2, by - 2, bw + 4, 18);
+    ctx.fillStyle = '#ff3333';
+    ctx.fillRect(bx, by, bw * (this.hp / this.maxHp), 14);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Microsoft YaHei';
+    ctx.textAlign = 'center';
+    ctx.fillText(`BOSS ${this.hp}/${this.maxHp}`, W/2, by + 11);
+  }
+}
+
+// 道具类
+const ITEM_TYPES = { UMBRELLA: 'umbrella', SHIELD: 'shield', RAPID: 'rapid' };
+class Item {
+  constructor(x, y, type) {
+    this.x = x; this.y = y;
+    this.type = type;
+    this.r = 18;
+    this.speed = 2;
+    this.dead = false;
+    this.bob = 0;
+  }
+  update(dt) {
+    this.y += this.speed * (dt / 16);
+    this.bob += dt * 0.005;
+    if (this.y > H + 30) this.dead = true;
+  }
+  draw() {
+    const off = Math.sin(this.bob) * 3;
+    ctx.save();
+    ctx.translate(this.x, this.y + off);
+    // 外圈
+    let color = '#aa00aa', label = '伞';
+    if (this.type === ITEM_TYPES.SHIELD) { color = '#0088ff'; label = '盾'; }
+    if (this.type === ITEM_TYPES.RAPID) { color = '#ff8800'; label = '速'; }
+    ctx.strokeStyle = color;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, this.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.font = 'bold 18px Microsoft YaHei';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, 0, 1);
+    ctx.restore();
+  }
+}
+
+// 粒子
+class Particle {
+  constructor(x, y, color) {
+    this.x = x; this.y = y;
+    this.vx = (Math.random() - 0.5) * 8;
+    this.vy = (Math.random() - 0.5) * 8;
+    this.life = 500;
+    this.maxLife = 500;
+    this.color = color;
+    this.r = 2 + Math.random() * 3;
+  }
+  update(dt) {
+    this.x += this.vx * (dt / 16);
+    this.y += this.vy * (dt / 16);
+    this.vy += 0.1 * (dt / 16);
+    this.life -= dt;
+  }
+  draw() {
+    ctx.globalAlpha = this.life / this.maxLife;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  get dead() { return this.life <= 0; }
+}
+
+function spawnExplosion(x, y, color='#ffaa00', count=15) {
+  for (let i = 0; i < count; i++) particles.push(new Particle(x, y, color));
+}
+
+// ==================== 输入处理 ====================
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.key] = true;
+  keys[e.code] = true;
+
+  // ESC 优先处理（在音频解锁之前，避免干扰）
+  if (e.key === 'Escape') {
+    if (_tryCloseLBOnEsc()) return;
+    if (gameState === STATE.PUREVIDEO) {
+      exitPureVideo();
+    } else if (gameState === STATE.PLAYING) {
+      pauseGame();
+    } else if (gameState === STATE.PAUSED) {
+      resumeGame();
+    }
+    return;
+  }
+
+  ensureAudioUnlocked();
+  ensureVideoWithSound();
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.key] = false;
+  keys[e.code] = false;
+});
+
+// 鼠标/触屏控制 —— 始终跟随鼠标
+let pointerX = 0, pointerY = 0;
+let pointerReady = false;
+// 鼠标移动时始终更新位置
+window.addEventListener('mousemove', (e) => { updatePointer(e); });
+// 触屏：按住时跟随（passive:false 让 preventDefault 生效，阻止页面滚动）
+canvas.addEventListener('touchstart', (e) => { pointerReady = true; updatePointer(e.touches[0]); e.preventDefault(); }, { passive: false });
+canvas.addEventListener('touchmove', (e) => { updatePointer(e.touches[0]); e.preventDefault(); }, { passive: false });
+canvas.addEventListener('touchend', () => { pointerReady = false; });
+canvas.addEventListener('touchcancel', () => { pointerReady = false; });
+
+function updatePointer(e) {
+  const rect = canvas.getBoundingClientRect();
+  pointerX = e.clientX - rect.left;
+  pointerY = e.clientY - rect.top;
+}
+
+// ==================== 碰撞检测 ====================
+function circleRectCollide(cx, cy, cr, rx, ry, rw, rh) {
+  const closestX = Math.max(rx, Math.min(cx, rx + rw));
+  const closestY = Math.max(ry, Math.min(cy, ry + rh));
+  const dx = cx - closestX, dy = cy - closestY;
+  return (dx*dx + dy*dy) <= cr*cr;
+}
+function rectsCollide(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+// ==================== 理智显示 ====================
+function updateSanityDisplay() {
+  const sd = document.getElementById('sanityDisplay');
+  if (!player) return;
+  let html = '';
+  for (let i = 0; i < player.maxHp; i++) {
+    // i=0 最左边，i=maxHp-1 最右边
+    // hp=x，应该最右边的 (maxHp - x) 个变红
+    // 即 i >= x 时变红（当hp=4，maxHp=5时，i>=4 → 最右1个变红）
+    const shouldHurt = i >= player.hp;
+    html += `<span class="sanity-char ${shouldHurt ? 'hurt' : ''}">理智</span>`;
+  }
+  sd.innerHTML = html;
+}
+
+function updateBuffsDisplay() {
+  const bd = document.getElementById('buffsDisplay');
+  if (!player) { bd.style.display = 'none'; return; }
+  const buffs = [];
+  if (player.shieldTime > 0) buffs.push(`<div class="buff-item shield">护盾 ${(player.shieldTime/1000).toFixed(1)}s</div>`);
+  if (player.umbrellaTime > 0) buffs.push(`<div class="buff-item umbrella">伞状弹道 ${(player.umbrellaTime/1000).toFixed(1)}s</div>`);
+  if (player.rapidStacks.length > 0) {
+    let minT = Infinity;
+    for (const s of player.rapidStacks) if (s.time < minT) minT = s.time;
+    buffs.push(`<div class="buff-item rapid">攻速x${player.rapidStacks.length} ${(minT/1000).toFixed(1)}s</div>`);
+  }
+  if (buffs.length === 0) { bd.style.display = 'none'; return; }
+  bd.innerHTML = buffs.join('');
+  bd.style.display = 'flex';
+}
+
+// ==================== 排行榜 ====================
+const LB_KEY = 'kunKunZongMenLB_v1';
+function getLeaderboard() {
+  try {
+    const d = localStorage.getItem(LB_KEY);
+    return d ? JSON.parse(d) : [];
+  } catch { return []; }
+}
+function saveLeaderboard(lb) {
+  try { localStorage.setItem(LB_KEY, JSON.stringify(lb)); } catch {}
+}
+function renderLeaderboard() {
+  const list = document.getElementById('lbList');
+  if (!list) return;
+  const lb = getLeaderboard();
+  let html = '';
+  for (let i = 0; i < 5; i++) {
+    const item = lb[i];
+    html += `<div class="lb-item">
+      <span class="lb-rank">${i+1}.</span>
+      <span class="lb-name">${item ? escapeHtml(item.name) : '---'}</span>
+      <span class="lb-score">${item ? item.score : '--'}</span>
+    </div>`;
+  }
+  list.innerHTML = html;
+}
+function openLeaderboardDialog() {
+  renderLeaderboard();
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('leaderboardDialog').style.display = 'block';
+  // 点击遮罩层关闭弹窗
+  document.getElementById('overlay').onclick = function() {
+    if (document.getElementById('leaderboardDialog').style.display === 'block') {
+      closeLeaderboardDialog();
+    }
+  };
+}
+function closeLeaderboardDialog() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('leaderboardDialog').style.display = 'none';
+}
+// ESC 关闭排行榜弹窗（仅菜单状态下）
+function _tryCloseLBOnEsc() {
+  if (gameState === STATE.MENU && document.getElementById('leaderboardDialog').style.display === 'block') {
+    closeLeaderboardDialog();
+    return true;
+  }
+  return false;
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function canEnterLeaderboard(sc) {
+  const lb = getLeaderboard();
+  if (lb.length < 5) return true;
+  return sc > lb[4].score;
+}
+function insertLeaderboard(name, sc) {
+  const lb = getLeaderboard();
+  lb.push({ name: name || '无名氏', score: sc, time: Date.now() });
+  lb.sort((a, b) => b.score - a.score);
+  while (lb.length > 5) lb.pop();
+  saveLeaderboard(lb);
+}
+
+// ==================== 游戏流程控制 ====================
+function startGame(mode) {
+  gameMode = mode;
+  gameState = STATE.PLAYING;
+  ensureAudioUnlocked();
+  SFX.start();
+
+  // 关闭背景视频声音，播放游戏BGM
+  const v = document.getElementById('bgVideo');
+  v.muted = true;
+  v.pause();
+  startBGM();
+
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('bgVideo').style.display = 'none';
+  canvas.style.display = 'block';
+  document.getElementById('sanityDisplay').style.display = 'block';
+  document.getElementById('killCounter').style.display = 'block';
+  document.getElementById('scoreDisplay').style.display = 'block';
+  document.getElementById('buffsDisplay').style.display = 'none';
+
+  // 初始化游戏对象
+  enemies = []; bullets = []; enemyBullets = []; items = []; particles = [];
+  boss = null;
+  killCount = 0; totalKills = 0; score = 0;
+  enemySpawnTimer = 0;
+
+  player = new Player(mode);
+  // 初始化指针位置到玩家中心，避免移动端未触摸时玩家漂移到左上角
+  pointerX = player.x + player.w / 2;
+  pointerY = player.y + player.h / 2;
+  updateSanityDisplay();
+  updateKillCounter();
+  updateScore();
+
+  lastTime = performance.now();
+  if (animationId) cancelAnimationFrame(animationId);
+  gameLoop(lastTime);
+}
+
+function startPureVideo() {
+  gameState = STATE.PUREVIDEO;
+  ensureAudioUnlocked();
+  ensureVideoWithSound();
+  document.getElementById('mainMenu').style.display = 'none';
+  document.getElementById('videoModeHint').style.display = 'block';
+  const v = document.getElementById('bgVideo');
+  v.style.display = 'block';
+  v.muted = false;
+  v.volume = 1.0;
+  v.play().catch(()=>{});
+}
+function exitPureVideo() {
+  gameState = STATE.MENU;
+  document.getElementById('mainMenu').style.display = 'block';
+  document.getElementById('videoModeHint').style.display = 'none';
+  const v = document.getElementById('bgVideo');
+  // 保持视频有声（若已经解锁就不回静音）
+  if (_videoSoundUnlocked) { v.muted = false; v.volume = 0.8; }
+  else { v.muted = true; }
+  renderLeaderboard();
+}
+
+function pauseGame() {
+  if (gameState !== STATE.PLAYING) return;
+  gameState = STATE.PAUSED;
+  pauseBGM();
+  document.getElementById('overlay').style.display = 'block';
+  document.getElementById('pauseMenu').style.display = 'block';
+  // 暂停时隐藏输入焦点
+}
+function resumeGame() {
+  if (gameState !== STATE.PAUSED) return;
+  gameState = STATE.PLAYING;
+  resumeBGM();
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('pauseMenu').style.display = 'none';
+  lastTime = performance.now();
+  gameLoop(lastTime);
+}
+
+let lbTempMode = 'pause'; // 'pause' or 'gameover'
+function showPauseLeaderboard() {
+  lbTempMode = 'pause';
+  const list = document.getElementById('lbList');
+  const lb = getLeaderboard();
+  let html = `<h3 style="color:#0066cc;text-align:center;margin-bottom:12px;font-size:22px;">🏆 排行榜</h3>`;
+  for (let i = 0; i < 5; i++) {
+    const item = lb[i];
+    html += `<div class="lb-item">
+      <span class="lb-rank">${i+1}.</span>
+      <span class="lb-name">${item ? escapeHtml(item.name) : '---'}</span>
+      <span class="lb-score">${item ? item.score : '--'}</span>
+    </div>`;
+  }
+  html += `<div style="text-align:center;margin-top:15px;">
+    <button class="dlg-btn" onclick="closePauseLeaderboard()">返回</button>
+  </div>`;
+  document.getElementById('pauseMenu').innerHTML = html;
+}
+function closePauseLeaderboard() {
+  document.getElementById('pauseMenu').innerHTML = `
+    <h2>游戏暂停</h2>
+    <button class="pause-btn" onclick="resumeGame()">返回游戏</button>
+    <button class="pause-btn" onclick="showPauseLeaderboard()">排行榜</button>
+    <button class="pause-btn" onclick="quitAndRank()">退出游戏并排名</button>
+  `;
+}
+
+function quitAndRank() {
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('pauseMenu').style.display = 'none';
+  closePauseLeaderboard();
+  gameOver(true);
+}
+
+function gameOver(fromQuit=false) {
+  gameState = STATE.GAMEOVER;
+  if (animationId) cancelAnimationFrame(animationId);
+  stopBGM();
+  if (!fromQuit) playDieSfx();
+  SFX.gameOver();
+
+  document.getElementById('overlay').style.display = 'block';
+  const dlg = document.getElementById('gameOverDialog');
+  dlg.style.display = 'block';
+  document.getElementById('finalScoreText').textContent = `分数: ${score}   击败: ${totalKills}`;
+
+  const prompt = document.getElementById('rankPrompt');
+  const input = document.getElementById('nameInput');
+  if (canEnterLeaderboard(score)) {
+    prompt.style.display = 'block';
+    input.value = '';
+    setTimeout(()=>input.focus(), 100);
+  } else {
+    prompt.style.display = 'none';
+  }
+}
+
+function confirmGameOver() {
+  const prompt = document.getElementById('rankPrompt');
+  if (prompt.style.display !== 'none') {
+    const name = document.getElementById('nameInput').value.trim() || '无名氏';
+    insertLeaderboard(name, score);
+  }
+  backToMenu();
+}
+
+function backToMenu() {
+  gameState = STATE.MENU;
+  if (animationId) cancelAnimationFrame(animationId);
+  // 停止游戏BGM，恢复背景视频
+  stopBGM();
+  document.getElementById('overlay').style.display = 'none';
+  document.getElementById('gameOverDialog').style.display = 'none';
+  document.getElementById('pauseMenu').style.display = 'none';
+  canvas.style.display = 'none';
+  document.getElementById('sanityDisplay').style.display = 'none';
+  document.getElementById('killCounter').style.display = 'none';
+  document.getElementById('scoreDisplay').style.display = 'none';
+  document.getElementById('buffsDisplay').style.display = 'none';
+  document.getElementById('mainMenu').style.display = 'block';
+  document.getElementById('bgVideo').style.display = 'block';
+  document.getElementById('leaderboardDialog').style.display = 'none';
+  // 回到菜单时恢复视频有声
+  const v = document.getElementById('bgVideo');
+  if (_videoSoundUnlocked) {
+    v.muted = false;
+    v.volume = 0.8;
+  } else {
+    v.muted = true;
+  }
+  v.play().catch(()=>{});
+  closePauseLeaderboard();
+  renderLeaderboard();
+}
+
+// ==================== 辅助更新 ====================
+function updateKillCounter() {
+  const shown = Math.min(killCount, maxKillsForBoss);
+  document.getElementById('killCounter').textContent = `${shown}/${maxKillsForBoss}`;
+}
+function updateScore() {
+  document.getElementById('scoreDisplay').textContent = `分数: ${score}`;
+}
+
+// ==================== 主循环 ====================
+function gameLoop(t) {
+  if (gameState !== STATE.PLAYING) return;
+  const dt = Math.min(50, t - lastTime);
+  lastTime = t;
+  update(dt);
+  render();
+  animationId = requestAnimationFrame(gameLoop);
+}
+
+function update(dt) {
+  player.update(dt);
+
+  // 生成敌机
+  const spawnInterval = gameMode === 'hater' ? 900 : 1400;
+  enemySpawnTimer -= dt;
+  const canSpawnEnemy = !boss || killCount < maxKillsForBoss || true; // boss存活期间正常刷新
+  if (enemySpawnTimer <= 0 && canSpawnEnemy && killCount < 9999) {
+    enemySpawnTimer = spawnInterval;
+    enemies.push(new Enemy(gameMode));
+  }
+
+  // 生成boss：到达30且没有boss时召唤
+  if (!boss && killCount >= maxKillsForBoss) {
+    boss = new Boss(gameMode);
+    SFX.bossAppear();
+    playBossSfx();
+  }
+
+  // 更新敌机
+  for (const e of enemies) e.update(dt);
+  enemies = enemies.filter(e => !e.dead);
+
+  // 更新boss
+  if (boss) {
+    boss.update(dt);
+    if (boss.dead) {
+      spawnExplosion(boss.x + boss.w/2, boss.y + boss.h/2, '#ff0000', 50);
+      SFX.bossExplode();
+      playBossSfx();
+      boss = null;
+      killCount = 0; // 击败boss后重置为0，重新累计30只召唤下一个boss
+      updateKillCounter();
+    }
+  }
+
+  // 更新子弹
+  for (const b of bullets) b.update(dt);
+  for (const b of enemyBullets) b.update(dt);
+  bullets = bullets.filter(b => !b.dead);
+  enemyBullets = enemyBullets.filter(b => !b.dead);
+
+  // 更新道具
+  for (const it of items) it.update(dt);
+  items = items.filter(it => !it.dead);
+
+  // 粒子
+  for (const p of particles) p.update(dt);
+  particles = particles.filter(p => !p.dead);
+
+  // 碰撞：玩家子弹 vs 敌机
+  for (const b of bullets) {
+    for (const e of enemies) {
+      if (!b.dead && !e.dead && circleRectCollide(b.x, b.y, b.r, e.x, e.y, e.w, e.h)) {
+        b.dead = true;
+        if (e.takeDamage()) {
+          spawnExplosion(e.x + e.w/2, e.y + e.h/2, '#d4a574', 12);
+          SFX.explode();
+          score += 10;
+          totalKills++;
+          // boss存活期间 killCount保持30不变；达到30但boss还没出来时也不增加
+          if (!boss && killCount < maxKillsForBoss) {
+            killCount++;
+          }
+          updateKillCounter();
+          updateScore();
+          // 道具掉落
+          dropItem(e.x + e.w/2, e.y + e.h/2);
+        }
+        break;
+      }
+    }
+    // 玩家子弹 vs boss
+    if (!b.dead && boss && !boss.dead && circleRectCollide(b.x, b.y, b.r, boss.x, boss.y, boss.w, boss.h)) {
+      b.dead = true;
+      if (boss.takeDamage()) {
+        spawnExplosion(boss.x + boss.w/2, boss.y + boss.h/2, '#ff0000', 50);
+      } else {
+        spawnExplosion(b.x, b.y, '#ffff00', 4);
+      }
+      updateScore();
+    }
+  }
+
+  // 碰撞：敌人子弹 vs 玩家
+  for (const b of enemyBullets) {
+    if (!b.dead && circleRectCollide(b.x, b.y, b.r, player.x, player.y, player.w, player.h)) {
+      b.dead = true;
+      player.takeDamage();
+    }
+  }
+
+  // 碰撞：敌机 vs 玩家
+  for (const e of enemies) {
+    if (!e.dead && rectsCollide(e, player)) {
+      e.dead = true;
+      spawnExplosion(e.x + e.w/2, e.y + e.h/2, '#d4a574', 12);
+      SFX.explode();
+      // 碰撞导致敌机也算被击毁，加分数但受同样killCount规则
+      score += 10;
+      totalKills++;
+      if (!boss && killCount < maxKillsForBoss) {
+        killCount++;
+      }
+      updateKillCounter();
+      updateScore();
+      dropItem(e.x + e.w/2, e.y + e.h/2);
+      player.takeDamage();
+    }
+  }
+  // boss vs 玩家
+  if (boss && !boss.dead && rectsCollide(boss, player)) {
+    player.takeDamage();
+  }
+
+  // 道具拾取
+  for (const it of items) {
+    if (!it.dead && circleRectCollide(it.x, it.y, it.r, player.x, player.y, player.w, player.h)) {
+      it.dead = true;
+      applyItem(it.type);
+    }
+  }
+
+  updateBuffsDisplay();
+}
+
+function dropItem(x, y) {
+  const r = Math.random();
+  if (r < 0.20) items.push(new Item(x, y, ITEM_TYPES.UMBRELLA));
+  else if (r < 0.40) items.push(new Item(x, y, ITEM_TYPES.SHIELD));
+  else if (r < 0.75) items.push(new Item(x, y, ITEM_TYPES.RAPID));
+}
+
+function applyItem(type) {
+  SFX.pickup();
+  if (type === ITEM_TYPES.UMBRELLA) {
+    player.umbrellaTime = 4000; // 4秒，刷新不叠加
+  } else if (type === ITEM_TYPES.SHIELD) {
+    player.shieldTime = 5000; // 5秒，刷新不叠加
+  } else if (type === ITEM_TYPES.RAPID) {
+    // 攻速+50%，持续7秒，可无限叠加
+    player.rapidStacks.push({ time: 7000, mult: 1.5 });
+  }
+}
+
+// 背景滚动偏移
+let bgScrollY = 0;
+function render() {
+  // 背景图片（滚动）
+  if (images.BEIJING) {
+    const img = images.BEIJING;
+    const scale = W / img.width;
+    const bgH = img.height * scale;
+    bgScrollY = (bgScrollY + 0.5) % bgH;
+    ctx.drawImage(img, 0, bgScrollY - bgH, W, bgH);
+    ctx.drawImage(img, 0, bgScrollY, W, bgH);
+  } else {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#0a0a2e');
+    g.addColorStop(0.5, '#16213e');
+    g.addColorStop(1, '#0a0a2e');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // 绘制顺序
+  for (const it of items) it.draw();
+  for (const e of enemies) e.draw();
+  if (boss) boss.draw();
+  player.draw();
+  for (const b of bullets) b.draw();
+  for (const b of enemyBullets) b.draw();
+  for (const p of particles) p.draw();
+}
+
+// 背景星星
+const stars = [];
+for (let i = 0; i < 80; i++) stars.push({
+  x: Math.random(), y: Math.random(),
+  r: Math.random() * 1.5 + 0.5,
+  s: Math.random() * 0.3 + 0.1
+});
+let starT = 0;
+function drawStars() {
+  starT += 0.016;
+  ctx.fillStyle = '#fff';
+  for (const s of stars) {
+    const y = (s.y * H + starT * s.s * 60) % H;
+    ctx.globalAlpha = 0.3 + Math.sin(starT * 2 + s.x * 10) * 0.3 + 0.3;
+    ctx.beginPath();
+    ctx.arc(s.x * W, y, s.r, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ==================== 初始化 ====================
+async function init() {
+  bulletImg = createBulletImg();
+  await Promise.all([
+    loadImage('ZHONGFENJI', 'ZHONGFENJI.png'),
+    loadImage('JIDAN', 'jidan.png'),
+    loadImage('KUNKUN', 'KUNKUN.png'),
+    loadImage('boss', 'boss.png'),
+    loadImage('BEIJING', 'beijing.png'),
+  ]);
+  renderLeaderboard();
+  // 启动视频
+  const v = document.getElementById('bgVideo');
+  v.muted = true;
+  v.play().catch(()=>{});
+}
+init();
+</script>
+</body>
+</html>
