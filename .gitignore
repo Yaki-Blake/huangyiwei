@@ -1,2 +1,5 @@
 # WorkBuddy 本地项目数据（记忆/日志/skill 等工具元数据，不纳入版本控制）
 .workbuddy/
+
+# 1_h264.mp4 的原始未压缩母版（144.8MB），仅本地留存，不上传仓库
+1_h264_original.mp4
