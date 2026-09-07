@@ -1,0 +1,9 @@
+# Git LFS 配置
+# 当前仓库已无超过 GitHub 单文件上限(100MB)的文件，故不再启用 LFS 过滤。
+#
+# 重要背景：GitHub Pages 不提供 Git LFS 的文件实体，只提供指针文本，
+# 因此任何被网页直接引用的媒体文件都不可放进 LFS。
+#
+# 若日后新增超过 100MB 的文件，请先压缩到 100MB 以内；
+# 确需原样保存时再逐条添加，例如：
+#   超大文件.bin filter=lfs diff=lfs merge=lfs -text
