@@ -200,6 +200,20 @@
       line-height: 1.25;
     }
 
+    /* 逐字跳动：每个字独立上下弹跳，靠 --i 递增延时形成依次起伏的波浪。
+       只在板块进入视口（.reveal.visible）时播放，滚远后自动停下，不白耗性能。 */
+    .summer-char {
+      display: inline-block;   /* inline 元素不接受 transform，需转成 inline-block */
+    }
+    .reveal.visible .summer-char {
+      animation: summerJump 1.5s ease-in-out infinite;
+      animation-delay: calc(var(--i, 0) * 0.09s);
+    }
+    @keyframes summerJump {
+      0%, 55%, 100% { transform: translateY(0); }
+      28%           { transform: translateY(-0.3em); }
+    }
+
     /* ========== 自我栏目 ========== */
     #self {
       justify-content: center;
@@ -244,18 +258,13 @@
       to { transform: translateX(0); }
     }
 
-    @keyframes slideFromRight {
-      from { transform: translateX(100vw); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-
     .self-tags {
       margin-top: 50px;
       max-width: 620px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 6px 20px;
+      gap: 10px 20px;
     }
 
     .self-tag {
@@ -272,11 +281,11 @@
     @keyframes tagSlideIn {
       from {
         opacity: 0;
-        transform: translate(var(--tx, 0), var(--ty, 0));
+        transform: translate(var(--tx, 0), var(--ty, 0)) rotate(var(--rot, 0deg));
       }
       to {
         opacity: 1;
-        transform: translate(0, 0);
+        transform: translate(0, 0) rotate(var(--rot, 0deg));
       }
     }
 
@@ -298,15 +307,33 @@
       border: 6px solid rgba(255, 255, 255, 0.5);
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.4);
       flex-shrink: 0;
-      animation: slideFromRight 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.4s backwards;
+      /* 从水底深处由极小加速冲出水面，破水后砸落并溅起扩散水圈 */
+      animation: surface 1.8s ease-out both;
+    }
+
+    @keyframes surface {
+      /* 0%→34% 单段加速冲出，不在中途设关键帧，避免上升被打断 */
+      0%   { opacity: 0; transform: translateY(190%) scale(.05); filter: blur(26px) brightness(.2) saturate(.35);
+             box-shadow: 0 0 0 0 rgba(255,255,255,0), 0 0 50px rgba(0,0,0,.4);
+             animation-timing-function: cubic-bezier(.4, .05, .55, .35); }
+      12%  { opacity: 1; }
+      34%  { opacity: 1; transform: translateY(-26%) scale(1.22); filter: blur(0) brightness(1.6);
+             box-shadow: 0 0 0 0 rgba(255,255,255,.95), 0 0 50px rgba(0,0,0,.4);
+             animation-timing-function: cubic-bezier(.2, .8, .3, 1); }
+      50%  { transform: translateY(10%) scale(1.1, .88); filter: blur(0) brightness(1.1);
+             box-shadow: 0 0 0 28px rgba(255,255,255,.45), 0 0 50px rgba(0,0,0,.4); }
+      66%  { transform: translateY(-12%) scale(.92, 1.08); filter: blur(0) brightness(1.02);
+             box-shadow: 0 0 0 56px rgba(255,255,255,0), 0 0 50px rgba(0,0,0,.4); }
+      84%  { transform: translateY(4%) scale(1.02, .98);
+             box-shadow: 0 0 0 66px rgba(255,255,255,0), 0 0 50px rgba(0,0,0,.4); }
+      100% { opacity: 1; transform: none; filter: none;
+             box-shadow: 0 0 0 66px rgba(255,255,255,0), 0 0 50px rgba(0,0,0,.4); }
     }
 
     .self-photo img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform-origin: center center;
-      will-change: transform;
     }
 
     /* ========== 技能栏目 ========== */
@@ -653,15 +680,6 @@
       height: auto;
     }
 
-    .cert-item-vertical {
-      width: calc((100% - 80px) / 5);
-    }
-
-    .cert-item-vertical img {
-      width: 100%;
-      height: auto;
-    }
-
     .cert-item-vertical-special {
       width: calc((100% - 40px) / 3);
       max-width: 220px;
@@ -670,6 +688,81 @@
     .cert-item-vertical-special img {
       width: 100%;
       height: auto;
+    }
+
+    /* ========== 证书胶片环：二维无缝滑动，无阴影、无形变 ========== */
+    .film {
+      --per: 4;          /* 一行展示几格 */
+      --gap: 20px;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: pan-y;   /* 竖向滚动交给页面，横向拖拽归胶片 */
+      padding: 8px 0;        /* 给边缘虚化留出扩散空间，避免被裁出硬边 */
+      margin-bottom: 14px;
+      /* 满屏宽：抵消 section 的左右内边距，胶片两端贴住屏幕边缘 */
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+    }
+
+    .film.dragging {
+      cursor: grabbing;
+    }
+
+    .film-track {
+      display: flex;
+      gap: var(--gap);
+      width: max-content;
+      will-change: transform;
+    }
+
+    .film-cell {
+      flex: 0 0 auto;
+      width: var(--cell-w);
+    }
+
+    .film-cell img {
+      display: block;
+      width: 100%;
+      height: auto;          /* 保持证书原比例，不裁不拉 */
+      border-radius: 8px;
+      cursor: zoom-in;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    /* 静态混合行：四张证书一行（分组标题「其他证书」由 JS 生成） */
+    .cert-mixed {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0 20px;
+      margin-bottom: 30px;
+    }
+
+    .cert-mixed > .cert-item {
+      width: auto;           /* 宽度交给 grid，覆盖 .cert-item-horizontal 的百分比宽 */
+    }
+
+    /* 显式定位：选择器带上 .cert-mixed 前缀，优先级才压得住上面那条 width/grid 规则 */
+    .cert-mixed > .cm-i1  { grid-area: 1 / 1; }
+    .cert-mixed > .cm-i2  { grid-area: 1 / 2; }
+    .cert-mixed > .cm-i3  { grid-area: 1 / 3; }
+    .cert-mixed > .cm-i4  { grid-area: 1 / 4; }
+
+    @media (max-width: 900px) {
+      .film {
+        --per: 2;
+      }
+
+      /* 窄屏：玻尔/华为 一行，达摩院两张一行 */
+      .cert-mixed {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .cert-mixed > .cm-i1  { grid-area: 1 / 1; }
+      .cert-mixed > .cm-i4  { grid-area: 1 / 2; }
+      .cert-mixed > .cm-i2  { grid-area: 2 / 1; }
+      .cert-mixed > .cm-i3  { grid-area: 2 / 2; }
     }
 
     /* ========== 影视项目栏目 ========== */
@@ -998,10 +1091,10 @@
        解 V 得 V ≈ 0.205 × 容器宽（1282px 时为 263px，高 570px，恰与左侧块齐平）。 */
     .soft-slot-v { flex: 0 0 20.5%; aspect-ratio: 1280 / 2772; }
 
-    /* 这 5 张图的悬停放大效果：仅 1.05 倍（其余板块仍统一用 --hover-zoom） */
+    /* 这 5 张图的悬停效果：跟其他板块一样上浮 8px，但不做放大 */
     @media (hover: hover) and (pointer: fine) {
       .soft-slot:hover {
-        transform: scale(1.05);
+        transform: translateY(-8px);
         box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
         position: relative;
         z-index: 10;
@@ -1423,6 +1516,12 @@
         text-align: center;
       }
 
+      /* 小屏整体居中：标签云也跟着居中，避免左对齐显得歪 */
+      .self-tags {
+        justify-content: center;
+        margin-top: 36px;
+      }
+
       .self-name {
         font-size: 54px;
         letter-spacing: 8px;
@@ -1481,10 +1580,6 @@
 
       .cert-item-horizontal {
         width: calc((100% - 20px) / 2);
-      }
-
-      .cert-item-vertical {
-        width: calc((100% - 40px) / 3);
       }
 
       .section-title {
@@ -1585,8 +1680,7 @@
         padding-bottom: 140px;
       }
 
-      .cert-item-horizontal,
-      .cert-item-vertical {
+      .cert-item-horizontal {
         width: 100%;
       }
 
@@ -1704,16 +1798,15 @@
         <p class="self-prefix">我是</p>
         <h1 class="self-name">黄义威</h1>
         <div class="self-tags">
-          <span class="self-tag" style="--tx:-400px;--ty:0;margin-top:8px;font-size:30px;animation-delay:.45s">广东茂名</span>
-          <span class="self-tag" style="--tx:400px;--ty:-150px;margin-top:-6px;font-size:22px;animation-delay:.55s">广东财经大学</span>
-          <span class="self-tag" style="--tx:-300px;--ty:-250px;margin-top:10px;font-size:18px;animation-delay:.65s">计算机科学与技术</span>
-          <span class="self-tag" style="--tx:350px;--ty:200px;margin-top:-4px;font-size:24px;animation-delay:.75s">校园销售合伙人</span>
-          <span class="self-tag" style="--tx:-450px;--ty:120px;margin-top:6px;font-size:18px;animation-delay:.85s">华予星辰科技</span>
-          <span class="self-tag" style="--tx:400px;--ty:-200px;margin-top:-10px;font-size:34px;animation-delay:.95s">策划运营</span>
-          <span class="self-tag" style="--tx:-350px;--ty:250px;margin-top:4px;font-size:22px;animation-delay:1.05s">AI 图片生成</span>
-          <span class="self-tag" style="--tx:300px;--ty:250px;margin-top:-8px;font-size:22px;animation-delay:1.15s">AI 视频制作</span>
-          <span class="self-tag" style="--tx:-400px;--ty:-100px;margin-top:12px;font-size:18px;animation-delay:1.25s">PPT 设计</span>
-          <span class="self-tag" style="--tx:450px;--ty:100px;margin-top:-6px;font-size:28px;animation-delay:1.35s">数码产品</span>
+          <span class="self-tag" style="--tx:-400px;--ty:0;--rot:-0.8deg;margin-top:10px;font-size:30px;animation-delay:.45s">来自:广东茂名</span>
+          <span class="self-tag" style="--tx:400px;--ty:-150px;--rot:0.5deg;margin-top:-12px;font-size:20px;animation-delay:.55s">就读:广东财经大学</span>
+          <span class="self-tag" style="--tx:-300px;--ty:-250px;--rot:-0.3deg;margin-top:14px;font-size:17px;animation-delay:.65s">计算机科学与技术</span>
+          <span class="self-tag" style="--tx:350px;--ty:200px;--rot:1deg;margin-top:-6px;font-size:22px;animation-delay:.75s">华予星辰科技校园销售合伙人</span>
+          <span class="self-tag" style="--tx:-350px;--ty:250px;--rot:-0.6deg;margin-top:8px;font-size:27px;animation-delay:.85s">AI生图</span>
+          <span class="self-tag" style="--tx:300px;--ty:250px;--rot:0.8deg;margin-top:-16px;font-size:32px;animation-delay:.95s">AIGC</span>
+          <span class="self-tag" style="--tx:-380px;--ty:180px;--rot:-0.4deg;margin-top:12px;font-size:19px;animation-delay:1.05s">视频剪辑</span>
+          <span class="self-tag" style="--tx:-400px;--ty:-100px;--rot:1.2deg;margin-top:16px;font-size:25px;animation-delay:1.15s">PPT 设计</span>
+          <span class="self-tag" style="--tx:450px;--ty:100px;--rot:-1deg;margin-top:-10px;font-size:18px;animation-delay:1.25s">数码产品</span>
         </div>
       </div>
       <div class="self-photo">
@@ -1763,7 +1856,7 @@
 
   <!-- ========== 暑假概述 横幅 ========== -->
   <section id="summer" class="section-transparent summer-banner">
-    <h2 class="summer-headline reveal">我暑假偷里忙闲干了什么</h2>
+    <h2 class="summer-headline reveal" aria-label="我在暑假忙里偷闲干了什么"><span class="summer-char" style="--i:0" aria-hidden="true">我</span><span class="summer-char" style="--i:1" aria-hidden="true">在</span><span class="summer-char" style="--i:2" aria-hidden="true">暑</span><span class="summer-char" style="--i:3" aria-hidden="true">假</span><span class="summer-char" style="--i:4" aria-hidden="true">忙</span><span class="summer-char" style="--i:5" aria-hidden="true">里</span><span class="summer-char" style="--i:6" aria-hidden="true">偷</span><span class="summer-char" style="--i:7" aria-hidden="true">闲</span><span class="summer-char" style="--i:8" aria-hidden="true">干</span><span class="summer-char" style="--i:9" aria-hidden="true">了</span><span class="summer-char" style="--i:10" aria-hidden="true">什</span><span class="summer-char" style="--i:11" aria-hidden="true">么</span></h2>
   </section>
 
   <!-- ========== 证书 ========== -->
@@ -1860,24 +1953,23 @@
   <!-- ========== 竞赛项目 ========== -->
   <section id="contest" class="section-white">
     <h2 class="section-title reveal">竞赛项目</h2>
+    <!-- 竞赛记录：第一行左图右文，第二行左文右图；文字带打字机效果，各自独立触发 -->
     <div class="contest-layout reveal">
       <div class="contest-image">
-        <img src="jingsai.png" alt="竞赛项目照片" class="zoomable" data-zoom-group="contest" loading="lazy">
+        <img src="竞赛1.png" alt="竞赛项目照片" class="zoomable" data-zoom-group="contest" loading="lazy">
       </div>
       <div class="contest-text">
-        <p class="contest-line contest-line-1">2026年8月24号</p>
-        <p class="contest-line contest-line-2">我通过了社区的考核，进入竞赛队伍</p>
-        <p class="contest-line contest-line-3">持续学习ing......</p>
+        <p class="contest-line contest-line-1">2026年9月29号</p>
+        <p class="contest-line contest-line-2">借助ai工具输出日志、绘制excel表格与svg图，详细分析数据，不断优化代码</p>
       </div>
     </div>
-    <!-- 第二行：与上一行左右相反（左文右图）；文字同样带打字机效果，各自独立触发 -->
     <div class="contest-layout reveal">
       <div class="contest-text">
         <p class="contest-line contest-line-1">2026年9月30号</p>
-        <p class="contest-line contest-line-2">在竞赛中多次优化代码，跑出14.45s的优秀成绩，远超去年最佳成绩14.81s</p>
+        <p class="contest-line contest-line-2">在最终自测时，最佳成绩是14.45s，远超去年优秀成绩14.81s，且代码稳定，多次数据方差在1.6</p>
       </div>
       <div class="contest-image">
-        <img src="rstchengji.png" alt="竞赛成绩" class="zoomable" data-zoom-group="contest" loading="lazy">
+        <img src="竞赛2.png" alt="竞赛成绩" class="zoomable" data-zoom-group="contest" loading="lazy">
       </div>
     </div>
   </section>
@@ -1962,7 +2054,8 @@
     })();
 
     // ========== 证书数据 ==========
-    const horizontalCertGroups = [
+    // 胶片环：自动自左向右无缝滑动（桌面一行 4 格，≤900px 一行 2 格）
+    const ringCertGroups = [
       {
         name: "Datawhale 系列认证",
         certs: [
@@ -1977,17 +2070,20 @@
         ]
       },
       {
-        name: "大模型 Clouder 认证",
+        // 大模型 Clouder 与人工智能 Clouder 合并为同一个环
+        name: "阿里云系列认证",
         certs: [
           { file: "大模型 Clouder 认证：RAG 应用构建与优化.png", name: "RAG 应用构建与优化" },
           { file: "大模型 Clouder 认证：基于 PAI ArtLab 的 AIGC 设计基础.png", name: "基于 PAI ArtLab 的 AIGC 设计基础" },
           { file: "大模型 Clouder 认证：基于百炼平台构建智能体认证.png", name: "基于百炼平台构建智能体认证" },
           { file: "大模型 Clouder 认证：基于通义灵码实现高效 AI 编码实践.png", name: "基于通义灵码实现高效 AI 编码实践" },
-          { file: "大模型clouder认证：利用大模型提升内容生产能力.png", name: "利用大模型提升内容生产能力" }
+          { file: "大模型clouder认证：利用大模型提升内容生产能力.png", name: "利用大模型提升内容生产能力" },
+          { file: "人工智能Clouder认证VISION人工智能设计(进阶).png", name: "VISION 人工智能设计(进阶)" },
+          { file: "人工智能Clouder认证：VISION人工智能设计(入门).png", name: "VISION 人工智能设计(入门)" }
         ]
       },
       {
-        name: "微认证考试",
+        name: "华为云系列认证",
         certs: [
           { file: "微认证考试：AI打造专属企业风格海报.png", name: "AI 打造专属企业风格海报" },
           { file: "微认证考试：AI智能语音识别计算器.png", name: "AI 智能语音识别计算器" },
@@ -1996,40 +2092,32 @@
           { file: "微认证考试：基于昇腾云服务训练YOLOv8模型实现目标检测.png", name: "基于昇腾云服务训练 YOLOv8 目标检测" },
           { file: "微认证考试：大模型的咒语-Prompt工程.png", name: "大模型的咒语 - Prompt 工程" }
         ]
-      },
+      }
+    ];
+
+    // 静态：一行 4 张，保持原样
+    const staticCertGroups = [
       {
-        name: "人工智能 Clouder 认证",
-        certs: [
-          { file: "人工智能Clouder认证VISION人工智能设计(进阶).png", name: "VISION 人工智能设计(进阶)" },
-          { file: "人工智能Clouder认证：VISION人工智能设计(入门).png", name: "VISION 人工智能设计(入门)" }
-        ]
-      },
-      {
-        name: "工程师认证",
+        name: "科大讯飞认证",
         certs: [
           { file: "RG工程师认证.png", name: "RG 工程师认证" },
           { file: "prompt工程师认证.png", name: "Prompt 工程师认证" },
           { file: "微调工程师认证.png", name: "微调工程师认证" },
           { file: "智能体工程师认证.png", name: "智能体工程师认证" }
         ]
-      },
-      {
-        name: "其他认证",
-        certs: [
-          { file: "玻尔「AI4S Cup - Python 基础能力认证」AI 证书.png", name: "玻尔 AI4S Cup - Python 基础能力认证" },
-          { file: "华为人工智能初识微认证.jpg", name: "华为人工智能初识微认证" }
-        ]
       }
     ];
 
+    // 静态混合行（分组标题「其他证书」）：玻尔 | 达摩院初级 达摩院高级 | 华为
+    // name 为每张证书自己的标签文字（与其他证书一致），alt 仅用于读屏
+    const mixedRowCerts = [
+      { file: "玻尔「AI4S Cup - Python 基础能力认证」AI 证书.png", alt: "玻尔 AI4S Cup - Python 基础能力认证", name: "AI4S Cup - Python 基础能力认证", item: "cm-i1" },
+      { file: "人工智能训练师（初级）.jpg", alt: "达摩院人工智能证书(初级)", name: "人工智能训练师（初级）", item: "cm-i2" },
+      { file: "人工智能训练师（高级.jpg", alt: "达摩院人工智能证书(高级)", name: "人工智能训练师（高级）", item: "cm-i3" },
+      { file: "华为人工智能初识微认证.jpg", alt: "华为人工智能初识微认证", name: "人工智能初识微认证", item: "cm-i4" }
+    ];
+
     const verticalCertGroups = [
-      {
-        name: "人工智能训练师",
-        certs: [
-          { file: "人工智能训练师（初级）.jpg", name: "人工智能训练师(初级)" },
-          { file: "人工智能训练师（高级.jpg", name: "人工智能训练师(高级)" }
-        ]
-      },
       {
         name: "竖版证书",
         certs: [
@@ -2122,9 +2210,11 @@
       });
     });
 
-    // 收集所有证书图片（按渲染顺序）
+    // 收集所有证书图片（按渲染顺序，供灯箱左右切换）
     const allCertImages = [];
-    horizontalCertGroups.forEach(g => g.certs.forEach(c => allCertImages.push(c.file)));
+    ringCertGroups.forEach(g => g.certs.forEach(c => allCertImages.push(c.file)));
+    staticCertGroups.forEach(g => g.certs.forEach(c => allCertImages.push(c.file)));
+    mixedRowCerts.forEach(c => allCertImages.push(c.file));
     verticalCertGroups.forEach(g => g.certs.forEach(c => allCertImages.push(c.file)));
 
     // ========== 渲染证书 ==========
@@ -2171,45 +2261,235 @@
       return groupDiv;
     }
 
-    const certContainer = document.getElementById("cert-container");
-    horizontalCertGroups.forEach(g => {
-      certContainer.appendChild(renderCertGroup(g, 4, "horizontal"));
-    });
-    verticalCertGroups.forEach(g => {
-      // 人工智能训练师: 2个一行(对称)，竖版证书分组: 5个并排一行(ITCILO 最左 → 数据分析最右)
-      if (g.name === "竖版证书") {
-        const groupDiv = document.createElement("div");
-        groupDiv.className = "cert-group";
+    // 静态混合行：四张证书一行，分组标题与其他证书组一致
+    function renderMixedRow() {
+      const groupDiv = document.createElement("div");
+      groupDiv.className = "cert-group";
 
-        const groupTitle = document.createElement("h3");
-        groupTitle.className = "cert-group-title reveal";
-        groupTitle.textContent = g.name;
-        groupDiv.appendChild(groupTitle);
+      const groupTitle = document.createElement("h3");
+      groupTitle.className = "cert-group-title reveal";
+      groupTitle.textContent = "其他证书";
+      groupDiv.appendChild(groupTitle);
 
-        // 五个竖版证书：同一行并排（按数组顺序：ITCILO 最左 → 数据分析最右），尺寸/间隔不变
-        const row = document.createElement("div");
-        row.className = "cert-row cert-row-center";
-        g.certs.forEach(cert => {
-          const certDiv = document.createElement("div");
-          certDiv.className = "cert-item cert-item-vertical-special reveal";
+      const row = document.createElement("div");
+      row.className = "cert-mixed";
+
+      mixedRowCerts.forEach(cert => {
+        const certDiv = document.createElement("div");
+        certDiv.className = "cert-item cert-item-horizontal reveal " + cert.item;
+        const img = document.createElement("img");
+        img.src = cert.file; img.alt = cert.alt; img.loading = "lazy";
+        img.addEventListener("click", function() {
+          openLightbox(allCertImages, allCertImages.indexOf(cert.file), "image");
+        });
+        const nameP = document.createElement("p");
+        nameP.className = "cert-name";
+        nameP.textContent = cert.name;
+        certDiv.appendChild(img);
+        certDiv.appendChild(nameP);
+        row.appendChild(certDiv);
+      });
+
+      groupDiv.appendChild(row);
+      return groupDiv;
+    }
+
+    // 竖版证书：5 张同一行并排，尺寸/间隔不变（不滑动）
+    function renderVerticalRow(group) {
+      const groupDiv = document.createElement("div");
+      groupDiv.className = "cert-group";
+
+      const groupTitle = document.createElement("h3");
+      groupTitle.className = "cert-group-title reveal";
+      groupTitle.textContent = group.name;
+      groupDiv.appendChild(groupTitle);
+
+      const row = document.createElement("div");
+      row.className = "cert-row cert-row-center";
+      group.certs.forEach(cert => {
+        const certDiv = document.createElement("div");
+        certDiv.className = "cert-item cert-item-vertical-special reveal";
+        const img = document.createElement("img");
+        img.src = cert.file; img.alt = cert.name; img.loading = "lazy";
+        img.addEventListener("click", function() {
+          openLightbox(allCertImages, allCertImages.indexOf(cert.file), "image");
+        });
+        const nameP = document.createElement("p");
+        nameP.className = "cert-name"; nameP.textContent = cert.name;
+        certDiv.appendChild(img); certDiv.appendChild(nameP);
+        row.appendChild(certDiv);
+      });
+      groupDiv.appendChild(row);
+
+      return groupDiv;
+    }
+
+    // ========== 胶片环 ==========
+    const films = [];
+
+    function renderRing(group) {
+      const groupDiv = document.createElement("div");
+      groupDiv.className = "cert-group";
+
+      const groupTitle = document.createElement("h3");
+      groupTitle.className = "cert-group-title reveal";
+      groupTitle.textContent = group.name;
+      groupDiv.appendChild(groupTitle);
+
+      const film = document.createElement("div");
+      film.className = "film reveal";
+      const track = document.createElement("div");
+      track.className = "film-track";
+      film.appendChild(track);
+      groupDiv.appendChild(film);
+
+      films.push({
+        el: film, track: track, certs: group.certs, cells: [],
+        gap: 20, speed: 77, w: 0, cellW: 0, copyW: 0,
+        x: 0, lastX: null, dragging: false, visible: false, moved: 0, px: 0, down: null
+      });
+      return groupDiv;
+    }
+
+    // 按容器宽度算格宽，并把整份证书复制若干遍，拼出没有尽头的循环
+    function layoutFilm(f) {
+      const w = f.el.clientWidth;
+      if (!w) return;
+      const per = parseInt(getComputedStyle(f.el).getPropertyValue("--per"), 10) || 4;
+      f.w = w;
+      f.cellW = (w - f.gap * (per - 1)) / per;
+      f.el.style.setProperty("--cell-w", f.cellW + "px");
+      f.copyW = f.certs.length * (f.cellW + f.gap);
+      const copies = Math.max(2, Math.ceil(1 + (w + f.gap) / f.copyW));
+
+      f.track.textContent = "";
+      f.cells = [];
+      for (let c = 0; c < copies; c++) {
+        f.certs.forEach(cert => {
+          const cell = document.createElement("div");
+          cell.className = "film-cell";
+          cell.dataset.file = cert.file;
+
           const img = document.createElement("img");
           img.src = cert.file; img.alt = cert.name; img.loading = "lazy";
-          const certIndex = allCertImages.indexOf(cert.file);
-          img.addEventListener("click", function() {
-            openLightbox(allCertImages, certIndex, "image");
-          });
+
           const nameP = document.createElement("p");
           nameP.className = "cert-name"; nameP.textContent = cert.name;
-          certDiv.appendChild(img); certDiv.appendChild(nameP);
-          row.appendChild(certDiv);
-        });
-        groupDiv.appendChild(row);
 
-        certContainer.appendChild(groupDiv);
-      } else {
-        certContainer.appendChild(renderCertGroup(g, 5, "vertical"));
+          cell.appendChild(img); cell.appendChild(nameP);
+          f.track.appendChild(cell);
+          f.cells.push(cell);
+        });
       }
+      f.x = -f.copyW;
+      f.lastX = null;
+    }
+
+    // 位移始终收在 [-copyW, 0)，越界就整份平移，视觉上接不上缝
+    function wrapX(f, x) {
+      return ((x % f.copyW) + f.copyW) % f.copyW - f.copyW;
+    }
+
+    // 边缘虚化：遮住过半才开始虚化，全遮住 6px，露出过半为 0，中间线性
+    function blurEdges(f) {
+      const pitch = f.cellW + f.gap;
+      for (let i = 0; i < f.cells.length; i++) {
+        const cell = f.cells[i];
+        const left = f.x + i * pitch;
+        const right = left + f.cellW;
+        let hidden;
+        if (right <= 0 || left >= f.w) hidden = 1;
+        else if (left < 0) hidden = -left / f.cellW;
+        else if (right > f.w) hidden = (right - f.w) / f.cellW;
+        else hidden = 0;
+        const b = hidden > 0.5 ? 6 * (hidden - 0.5) / 0.5 : 0;
+        if (Math.abs(b - (cell._blur || 0)) > 0.08) {
+          cell._blur = b;
+          cell.style.filter = b ? "blur(" + b.toFixed(2) + "px)" : "";
+        }
+      }
+    }
+
+    // 按住左右拖拽（松手继续自动滑）；鼠标悬浮不暂停
+    function bindFilm(f) {
+      const el = f.el;
+      function endDrag() {
+        // setPointerCapture 会把 click 事件改派给 .film 本身，图片上的 click 收不到，
+        // 所以放大改由 pointerup 触发：按下到松开没怎么移动就算一次点击。
+        if (!f.dragging) return;
+        f.dragging = false;
+        el.classList.remove("dragging");
+        const target = f.down;
+        f.down = null;
+        if (f.moved > 6 || !target) return;
+        const cell = target.closest(".film-cell");
+        if (cell) openLightbox(allCertImages, allCertImages.indexOf(cell.dataset.file), "image");
+      }
+      el.addEventListener("pointerdown", function(e) {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        f.dragging = true; f.moved = 0; f.px = e.clientX; f.down = e.target;
+        el.classList.add("dragging");
+        if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
+      });
+      el.addEventListener("pointermove", function(e) {
+        if (!f.dragging) return;
+        const dx = e.clientX - f.px;
+        f.px = e.clientX;
+        f.moved += Math.abs(dx);
+        f.x = wrapX(f, f.x + dx);
+      });
+      el.addEventListener("pointerup", endDrag);
+      el.addEventListener("pointercancel", endDrag);
+    }
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let filmLastT = 0;
+
+    function filmTick(t) {
+      const dt = Math.min(50, t - filmLastT) / 1000;
+      filmLastT = t;
+      films.forEach(function(f) {
+        if (!f.copyW) return;
+        // speed 为正值 => 内容自左向右移动
+        if (!reduceMotion && f.visible && !f.dragging) {
+          f.x = wrapX(f, f.x + f.speed * dt);
+        }
+        if (f.x === f.lastX) return;   // 暂停时不写样式、不重算虚化
+        f.lastX = f.x;
+        f.track.style.transform = "translateX(" + f.x.toFixed(2) + "px)";
+        blurEdges(f);
+      });
+      requestAnimationFrame(filmTick);
+    }
+
+    const certContainer = document.getElementById("cert-container");
+    ringCertGroups.forEach(g => certContainer.appendChild(renderRing(g)));
+    staticCertGroups.forEach(g => certContainer.appendChild(renderCertGroup(g, 4, "horizontal")));
+    certContainer.appendChild(renderMixedRow());
+    verticalCertGroups.forEach(g => certContainer.appendChild(renderVerticalRow(g)));
+
+    films.forEach(function(f) { layoutFilm(f); bindFilm(f); });
+
+    // 离开视口的环不推进，省下无谓的重绘
+    if ("IntersectionObserver" in window) {
+      const filmIo = new IntersectionObserver(function(entries) {
+        entries.forEach(function(en) {
+          const f = films.find(item => item.el === en.target);
+          if (f) f.visible = en.isIntersecting;
+        });
+      }, { threshold: 0 });
+      films.forEach(f => filmIo.observe(f.el));
+    } else {
+      films.forEach(f => { f.visible = true; });
+    }
+
+    let filmResize;
+    window.addEventListener("resize", function() {
+      clearTimeout(filmResize);
+      filmResize = setTimeout(function() { films.forEach(layoutFilm); }, 150);
     });
+
+    requestAnimationFrame(function(t) { filmLastT = t; requestAnimationFrame(filmTick); });
 
     // ========== 技能板块翻转动画 ==========
     // 当技能卡片进入视口时触发翻转，从任一方向滑入均触发
@@ -2482,139 +2762,21 @@
       };
     })();
 
-    // ========== Codex 图片：悬停 BGM 淡出 + yinyue 淡入 ==========
-    (function () {
-      const codexImg = document.getElementById("codexImg");
-      if (!codexImg) return;
-      let codexAudio = document.getElementById("codexAudio");
-      if (!codexAudio) {
-        codexAudio = document.createElement("audio");
-        codexAudio.id = "codexAudio";
-        codexAudio.src = "yinyue.mp3";
-        codexAudio.preload = "auto";
-        codexAudio.volume = 0;
-        document.body.appendChild(codexAudio);
-      }
-
-      let codexOver = false;
-      let codexUnlocked = false;
-      let leaveTimer = null;
-      let codexSuspended = false; // 是否已向 bgm mixer 申请过 suspend（避免重复调用）
-
-      function codexStart() {
-        if (!codexSuspended) {
-          codexSuspended = true;
-          window._bgmSuspend(120);
-        }
-        codexAudio.volume = 0;
-        codexAudio.currentTime = 0;
-        const pr = codexAudio.play();
-        if (pr && pr.then) {
-          pr.then(function () { window._fadeAudio(codexAudio, 1, 180); })
-            .catch(function () {
-              codexAudio.addEventListener("canplay", function oncp() {
-                codexAudio.removeEventListener("canplay", oncp);
-                const pr2 = codexAudio.play();
-                if (pr2 && pr2.then) pr2.then(function () { window._fadeAudio(codexAudio, 1, 180); }).catch(function () {});
-              }, { once: true });
-            });
-        } else {
-          window._fadeAudio(codexAudio, 1, 180);
-        }
-      }
-      function codexStop() {
-        // 先fade out codex音乐，完了再暂停并回到开头
-        window._fadeAudio(codexAudio, 0, 140, function () {
-          codexAudio.pause();
-          try { codexAudio.currentTime = 0; } catch (_) {}
-        });
-        if (codexSuspended) {
-          codexSuspended = false;
-          window._bgmResume(200);
-        }
-      }
-
-      function unlock() {
-        if (codexUnlocked) return;
-        const pr = codexAudio.play();
-        if (pr && pr.then) {
-          pr.then(function () {
-            codexUnlocked = true;
-            codexAudio.pause();
-            try { codexAudio.currentTime = 0; } catch (_) {}
-            if (codexOver) codexStart();
-          }).catch(function () {
-            codexAudio.addEventListener("canplay", function oncp() {
-              codexAudio.removeEventListener("canplay", oncp);
-              codexUnlocked = true;
-              if (codexOver) codexStart();
-            }, { once: true });
-          });
-        } else {
-          codexUnlocked = true;
-        }
-        document.removeEventListener("pointerdown", unlock);
-        document.removeEventListener("keydown", unlock);
-        document.removeEventListener("touchstart", unlock);
-      }
-      document.addEventListener("pointerdown", unlock);
-      document.addEventListener("keydown", unlock);
-      document.addEventListener("touchstart", unlock);
-
-      codexImg.addEventListener("mouseenter", function () {
-        if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
-        codexOver = true;
-        window._codexHover = true;
-        codexStart();
-      });
-      codexImg.addEventListener("mouseleave", function () {
-        codexOver = false;
-        window._codexHover = false;
-        // 轻微防抖：短时间内离开又回来（50ms内）不触发停止，避免从边缘划过产生闪烁
-        leaveTimer = setTimeout(function () {
-          leaveTimer = null;
-          if (!codexOver) codexStop();
-        }, 40);
-      });
-      // 兜底：点击图片也可切换（用于部分浏览器悬停被限制的情况）
-      codexImg.addEventListener("click", function (e) {
-        e.preventDefault();
-        if (codexAudio.paused) { codexOver = true; window._codexHover = true; codexStart(); }
-        else { codexOver = false; window._codexHover = false; codexStop(); }
-      });
-      window.codexAudioEl = codexAudio;
-      window._codexHover  = false;
-    })();
-
     // ========== 页面级音频门控：页面隐藏 / 鼠标移出窗口 / 窗口失焦 → 暂停一切；回来 → 按状态恢复 ==========
     (function () {
       let pageVisible = !document.hidden;
       let mouseInside = true;
       let winFocused  = true;
-      const gate = { bgm: false, codex: false };
       function aud(o) { return o && typeof o.pause === "function"; }
 
       function pauseAll() {
         if (aud(window.bgAudio)) {
-          gate.bgm = !window.bgAudio.paused;
           try { window.bgAudio.pause(); } catch (_) {}
-        }
-        if (aud(window.codexAudioEl)) {
-          gate.codex = !window.codexAudioEl.paused;
-          try { window.codexAudioEl.pause(); } catch (_) {}
         }
       }
       function resumeAll() {
-        // bgm：鼠标不在任何悬停链接上时，统一交给 mixer 对账恢复
-        // （同时清掉失焦期间残留的悬停静音计数，确保返回页面后自动续播）
-        const overHover = !!window._codexHover;
-        if (!overHover && typeof window._bgmForceResume === "function") {
-          window._bgmForceResume(250);
-        }
-        if (gate.codex && window._codexHover && aud(window.codexAudioEl) && window.codexAudioEl.paused) {
-          window.codexAudioEl.volume = 1;
-          const p = window.codexAudioEl.play(); if (p && p.catch) p.catch(function () {});
-        }
+        // 统一交给 mixer 对账恢复（顺带清掉门控期间残留的静音计数，确保返回页面后自动续播）
+        if (typeof window._bgmForceResume === "function") window._bgmForceResume(250);
       }
       function update() {
         if (pageVisible && mouseInside && winFocused) {
@@ -2638,49 +2800,6 @@
       // 同步一次初始状态（处理后台打开等情形）
       window._gateActive = false;
       update();
-    })();
-
-    // ========== 个人头像：每次出现时随机旋转 5-8 圈（摩托启动式：迅速加速→高速转圈→缓缓停下） ==========
-    (function () {
-      const photo = document.querySelector("#self .self-photo img");
-      if (!photo) return;
-      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      let current = 0;     // 当前累计旋转角度（始终为 360 的整数倍，保证静止时端正）
-      let spinning = false;
-
-      function spinAvatar() {
-        if (spinning || reduce) return;
-        spinning = true;
-
-        const dir = Math.random() < 0.5 ? 1 : -1;          // 顺时针 / 逆时针
-        const turns = 5 + Math.floor(Math.random() * 3);   // 5、6、7 圈（最多 7 圈）
-        const start = current;
-        const end = start + dir * turns * 360;
-
-        // 先慢 → 中段最快 → 再慢：0~50% 缓起加速（ease-in），50%~100% 减速缓停（ease-out）
-        const mid = start + dir * (turns / 2) * 360;        // 半程：此处旋转速度达到峰值
-
-        const anim = photo.animate([
-          { transform: "rotate(" + start + "deg)", offset: 0,   easing: "ease-in" },  // 起步慢、逐渐加速
-          { transform: "rotate(" + mid + "deg)",   offset: 0.5, easing: "ease-out" }, // 中段最快、之后减速
-          { transform: "rotate(" + end + "deg)",  offset: 1 }                         // 缓缓停下
-        ], { duration: 2200 + Math.random() * 600, fill: "forwards" });
-
-        anim.onfinish = function () { current = end; spinning = false; };
-        anim.oncancel = function () { current = end; spinning = false; };
-      }
-
-      if ("IntersectionObserver" in window) {
-        const io = new IntersectionObserver(function (entries) {
-          entries.forEach(function (e) {
-            if (e.isIntersecting) spinAvatar();
-          });
-        }, { threshold: 0.4 });
-        io.observe(photo);
-      } else {
-        spinAvatar();
-      }
     })();
 
     // ========== 导航锚点跳转（自定义平滑滚动） ==========
@@ -2765,24 +2884,36 @@
       // 先给所有元素按当前方向设置初始位移，避免突兀跳动
       reveals.forEach(function (el) { setDirection(el, scrollDown); });
 
+      // 进场观察器：进入视口（露出 12%）即播放浮动动画
       const io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (entry.isIntersecting) {
-            if (entry.target.dataset.revealed === "1") return;
-            setDirection(entry.target, scrollDown);
-            // 强制回流，确保方向类生效后再加visible
-            void entry.target.offsetWidth;
-            entry.target.classList.add("visible");
-            entry.target.dataset.revealed = "1";
-          } else {
-            // 离开视口后重置，下次进入可根据滚动方向重新决定方向
-            entry.target.classList.remove("visible");
-            entry.target.dataset.revealed = "";
-          }
+          if (!entry.isIntersecting) return;
+          if (entry.target.dataset.revealed === "1") return;
+          setDirection(entry.target, scrollDown);
+          // 强制回流，确保方向类生效后再加visible
+          void entry.target.offsetWidth;
+          entry.target.classList.add("visible");
+          entry.target.dataset.revealed = "1";
         });
       }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
 
-      reveals.forEach(function (el) { io.observe(el); });
+      // 复位观察器（迟滞）：元素要远离视口 250px 以上才复位。
+      // 进场与复位若共用同一条边界，元素停在视口边缘时几像素的抖动就会反复进出，动画抽搐；
+      // 两条边界拉开 250px 缓冲带后，抖动落在缓冲带内不改变状态，
+      // 而大幅滚离后仍会复位，保证上滑 / 下滑进场都能重新播放动画。
+      const resetIo = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) return;
+          // 远离视口后重置，下次进入可根据滚动方向重新决定方向
+          entry.target.classList.remove("visible");
+          entry.target.dataset.revealed = "";
+        });
+      }, { threshold: 0, rootMargin: "250px 0px 250px 0px" });
+
+      reveals.forEach(function (el) {
+        io.observe(el);
+        resetIo.observe(el);
+      });
 
       // 首屏处理：让视口内的元素立即以"从下方进入"方式显现
       // 使用 rAF 确保初始布局完成后再触发
@@ -2831,7 +2962,7 @@
     })();
 
     // ========== 竞赛板块打字机逐字效果（每个 .contest-text 独立生效） ==========
-    // 每次进入视口都重新逐字打出：离开视口清空并复位，回来从头再打一遍
+    // 只在第一次进入视口时逐字打一遍，之后文字常驻，来回滚动不再重播
     (function () {
       var containers = document.querySelectorAll(".contest-text");
       if (!containers.length) return;
@@ -2847,17 +2978,10 @@
           el.textContent = "";
         });
 
-        var timers = [];
-        function trackTimer(id) { timers.push(id); return id; }
-        function clearAllTimers() {
-          timers.forEach(function (id) { clearTimeout(id); clearInterval(id); });
-          timers = [];
-        }
-
         function typeLine(el, text, speed, onDone) {
           el.classList.add("typing");
           var i = 0;
-          var timer = trackTimer(setInterval(function () {
+          var timer = setInterval(function () {
             el.textContent += text.charAt(i);
             i++;
             if (i >= text.length) {
@@ -2865,43 +2989,25 @@
               el.classList.remove("typing");
               if (onDone) onDone();
             }
-          }, speed));
+          }, speed);
         }
 
-        var isTyping = false;
-        var firstPlay = true;
-
-        function resetTypewriter() {
-          clearAllTimers();
-          isTyping = false;
-          lines.forEach(function (el) {
-            el.classList.remove("typing");
-            el.textContent = "";
-          });
-        }
-
+        var played = false;
         function startTypewriter() {
-          if (isTyping) return;
-          resetTypewriter();
-          isTyping = true;
+          if (played) return;
+          played = true;
 
           var index = 0;
           function nextLine() {
-            if (index >= lines.length) { isTyping = false; return; }
-            // 大字慢一点、小字快一点
-            var speed = index === 0 ? 120 : (index === 1 ? 70 : 80);
+            // 大字慢一点、小字快一点；整体再提速到原来的 1.15 倍
+            var speed = (index === 0 ? 120 : (index === 1 ? 70 : 80)) / 1.15;
             var gapAfter = index === 0 ? 300 : (index === 1 ? 250 : 0);
             typeLine(lines[index], originals[index], speed, function () {
               index++;
-              if (index < lines.length) {
-                trackTimer(setTimeout(nextLine, gapAfter));
-              } else {
-                isTyping = false;
-              }
+              if (index < lines.length) setTimeout(nextLine, gapAfter);
             });
           }
-          trackTimer(setTimeout(nextLine, firstPlay ? 400 : 200));
-          firstPlay = false;
+          setTimeout(nextLine, 400);
         }
 
         function isInViewport() {
@@ -2910,25 +3016,13 @@
           return rect.top < vh + 100 && rect.bottom > -100;
         }
 
-        function handleVisibility(visible) {
-          if (visible) startTypewriter();
-          else resetTypewriter();
-        }
-
-        var visibleState = null;
-        function setVisible(visible) {
-          if (visible === visibleState) return;   // 去重，避免原地滚动反复触发
-          visibleState = visible;
-          handleVisibility(visible);
-        }
-
         if ("IntersectionObserver" in window) {
           var io = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) { setVisible(entry.isIntersecting); });
+            entries.forEach(function (entry) { if (entry.isIntersecting) startTypewriter(); });
           }, { threshold: 0, rootMargin: "100px" });
           io.observe(container);
         }
-        visibilityChecks.push(function () { setVisible(isInViewport()); });
+        visibilityChecks.push(function () { if (isInViewport()) startTypewriter(); });
       }
 
       containers.forEach(setupTypewriter);
