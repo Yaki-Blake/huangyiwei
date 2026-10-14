@@ -547,7 +547,8 @@
       justify-content: center;
     }
 
-    /* 竖版证书：5 张并排一行，尺寸 220px、间隔 20px 不变 */
+    /* 竖版证书：横屏时 5 张并排一行，尺寸 220px、间隔 20px 不变；
+       竖屏（≤768px）时改走胶片环，不再使用下面这套尺寸 */
 
     .cert-item {
       transition: transform 0.35s ease, box-shadow 0.35s ease;
@@ -878,7 +879,7 @@
       width: 100%;
       margin: 0 auto;
     }
-    /* 第二行（竞赛成绩）：与第一行左右相反（左文右图），两行之间间距 48px */
+    /* 竞赛成绩行（左文右图）；若存在多行，行间距 48px */
     .contest-layout + .contest-layout {
       margin-top: 48px;
     }
@@ -1953,16 +1954,7 @@
   <!-- ========== 竞赛项目 ========== -->
   <section id="contest" class="section-white">
     <h2 class="section-title reveal">竞赛项目</h2>
-    <!-- 竞赛记录：第一行左图右文，第二行左文右图；文字带打字机效果，各自独立触发 -->
-    <div class="contest-layout reveal">
-      <div class="contest-image">
-        <img src="竞赛1.png" alt="竞赛项目照片" class="zoomable" data-zoom-group="contest" loading="lazy">
-      </div>
-      <div class="contest-text">
-        <p class="contest-line contest-line-1">2026年9月29号</p>
-        <p class="contest-line contest-line-2">借助ai工具输出日志、绘制excel表格与svg图，详细分析数据，不断优化代码</p>
-      </div>
-    </div>
+    <!-- 竞赛记录：左文右图；文字带打字机效果 -->
     <div class="contest-layout reveal">
       <div class="contest-text">
         <p class="contest-line contest-line-1">2026年9月30号</p>
@@ -2055,6 +2047,8 @@
 
     // ========== 证书数据 ==========
     // 胶片环：自动自左向右无缝滑动（桌面一行 4 格，≤900px 一行 2 格）
+    // 横屏下仅 ringCertGroups 走胶片环；竖屏（≤768px）下下面四组数据全部走胶片环，
+    // 具体分派见文末的 renderCertificates()。
     const ringCertGroups = [
       {
         name: "Datawhale 系列认证",
@@ -2294,7 +2288,8 @@
       return groupDiv;
     }
 
-    // 竖版证书：5 张同一行并排，尺寸/间隔不变（不滑动）
+    // 竖版证书：横屏时 5 张同一行并排，尺寸/间隔不变（不滑动）；
+    // 竖屏时此函数不参与渲染，改由 renderRing 输出胶片环
     function renderVerticalRow(group) {
       const groupDiv = document.createElement("div");
       groupDiv.className = "cert-group";
@@ -2371,7 +2366,8 @@
           cell.dataset.file = cert.file;
 
           const img = document.createElement("img");
-          img.src = cert.file; img.alt = cert.name; img.loading = "lazy";
+          // alt 优先取 cert.alt（「其他证书」有专门的读屏文案），没有则回落到标签文字
+          img.src = cert.file; img.alt = cert.alt || cert.name; img.loading = "lazy";
 
           const nameP = document.createElement("p");
           nameP.className = "cert-name"; nameP.textContent = cert.name;
@@ -2462,32 +2458,87 @@
       requestAnimationFrame(filmTick);
     }
 
-    const certContainer = document.getElementById("cert-container");
-    ringCertGroups.forEach(g => certContainer.appendChild(renderRing(g)));
-    staticCertGroups.forEach(g => certContainer.appendChild(renderCertGroup(g, 4, "horizontal")));
-    certContainer.appendChild(renderMixedRow());
-    verticalCertGroups.forEach(g => certContainer.appendChild(renderVerticalRow(g)));
+    // ========== 证书板块渲染：竖屏全部走胶片环 ==========
+    // 横屏（> 768px）：四条管线各按原样呈现，与改造前完全一致。
+    // 竖屏（≤ 768px）：四条管线统一走 renderRing，全部证书都变成可拖拽的胶片环。
+    // 阈值只此一处，改动这里即可整体调整触发范围。
+    const CERT_PORTRAIT_MQ = "(max-width: 768px)";
+    const certPortraitMq = window.matchMedia(CERT_PORTRAIT_MQ);
 
-    films.forEach(function(f) { layoutFilm(f); bindFilm(f); });
+    const certContainer = document.getElementById("cert-container");
+    let certFilmIo = null;    // 胶片环的视口门控观察器（重建时需断开旧的）
+    let certLayout = null;    // 当前已渲染的布局："portrait" | "landscape"
 
     // 离开视口的环不推进，省下无谓的重绘
-    if ("IntersectionObserver" in window) {
-      const filmIo = new IntersectionObserver(function(entries) {
+    function setupFilmVisibility() {
+      if (certFilmIo) { certFilmIo.disconnect(); certFilmIo = null; }
+      if (!("IntersectionObserver" in window)) {
+        films.forEach(f => { f.visible = true; });
+        return;
+      }
+      certFilmIo = new IntersectionObserver(function(entries) {
         entries.forEach(function(en) {
           const f = films.find(item => item.el === en.target);
           if (f) f.visible = en.isIntersecting;
         });
       }, { threshold: 0 });
-      films.forEach(f => filmIo.observe(f.el));
-    } else {
-      films.forEach(f => { f.visible = true; });
+      films.forEach(f => certFilmIo.observe(f.el));
     }
+
+    // 按当前视口重建整个证书板块；布局未变时直接返回 false，避免无谓重建
+    function renderCertificates(force) {
+      const portrait = certPortraitMq.matches;
+      const layout = portrait ? "portrait" : "landscape";
+      if (!force && certLayout === layout) return false;
+      certLayout = layout;
+
+      films.length = 0;
+      certContainer.textContent = "";
+
+      // 三条常驻胶片管线：任何布局下都保持胶片环
+      ringCertGroups.forEach(g => certContainer.appendChild(renderRing(g)));
+
+      if (portrait) {
+        // 竖屏：其余三组也改为胶片环，分组标题照旧保留
+        staticCertGroups.forEach(g => certContainer.appendChild(renderRing(g)));
+        certContainer.appendChild(renderRing({ name: "其他证书", certs: mixedRowCerts }));
+        verticalCertGroups.forEach(g => certContainer.appendChild(renderRing(g)));
+      } else {
+        // 横屏：保持原有静态呈现，一行 4 张 / 混合 grid / 竖版单行居中
+        staticCertGroups.forEach(g => certContainer.appendChild(renderCertGroup(g, 4, "horizontal")));
+        certContainer.appendChild(renderMixedRow());
+        verticalCertGroups.forEach(g => certContainer.appendChild(renderVerticalRow(g)));
+      }
+
+      films.forEach(function(f) { layoutFilm(f); bindFilm(f); });
+      setupFilmVisibility();
+
+      // 重建出来的节点是全新的，进场动画需要重新登记；
+      // 首次渲染时该钩子尚未挂载（浮动动画模块在更靠后执行），由它自己统一接管。
+      if (typeof window.__registerReveals === "function") {
+        window.__registerReveals(certContainer);
+      }
+      return true;
+    }
+
+    renderCertificates(true);
 
     let filmResize;
     window.addEventListener("resize", function() {
       clearTimeout(filmResize);
-      filmResize = setTimeout(function() { films.forEach(layoutFilm); }, 150);
+      filmResize = setTimeout(function() {
+        // 跨越断点：renderCertificates 内部已重建并重新布局，无需再算一次
+        // 未跨越：只按新宽度重算格宽
+        if (!renderCertificates()) films.forEach(layoutFilm);
+      }, 150);
     });
+
+    // 断点跨越本身也会触发 change，比单靠 resize 更可靠（横竖屏旋转、缩放同理）
+    if (certPortraitMq.addEventListener) {
+      certPortraitMq.addEventListener("change", function() { renderCertificates(); });
+    } else if (certPortraitMq.addListener) {
+      certPortraitMq.addListener(function() { renderCertificates(); });
+    }
 
     requestAnimationFrame(function(t) { filmLastT = t; requestAnimationFrame(filmTick); });
 
@@ -2911,9 +2962,31 @@
       }, { threshold: 0, rootMargin: "250px 0px 250px 0px" });
 
       reveals.forEach(function (el) {
+        el.dataset.revealBound = "1";
         io.observe(el);
         resetIo.observe(el);
       });
+
+      // 动态重建的节点（如证书板块在竖屏 / 横屏之间切换布局）需重新登记进场动画。
+      // 未登记的 .reveal 永远等不到 .visible，会一直停在隐藏态。
+      window.__registerReveals = function (root) {
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        (root || document).querySelectorAll(".reveal").forEach(function (el) {
+          if (el.dataset.revealBound === "1") return;
+          el.dataset.revealBound = "1";
+          setDirection(el, scrollDown);
+          io.observe(el);
+          resetIo.observe(el);
+          // 已在视口内的立即显现，避免重建后出现一段空白
+          const rect = el.getBoundingClientRect();
+          if (rect.top < vh - 40) {
+            el.classList.remove("from-top");
+            void el.offsetWidth;
+            el.classList.add("visible");
+            el.dataset.revealed = "1";
+          }
+        });
+      };
 
       // 首屏处理：让视口内的元素立即以"从下方进入"方式显现
       // 使用 rAF 确保初始布局完成后再触发
