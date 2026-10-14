@@ -16,7 +16,11 @@
       --shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
       --shadow-hover: 0 12px 40px rgba(21, 101, 192, 0.22);
       --radius: 16px;
-      --hover-zoom: 1.5;   /* 全站图片悬停统一放大倍率（以当前大小为基准） */
+      /* 全站图片悬停统一放大倍率（以当前大小为基准）。
+         竖屏（≤768px）下图片多为通栏宽度，放大 1.5 倍会横向溢出并遮挡相邻内容，
+         因此所有使用本变量的 :hover 规则都额外加了 (min-width: 769px) 限制，
+         竖屏下这些规则直接不生效，元素保持原始变换（如 --r 的旋转角度）。 */
+      --hover-zoom: 1.5;
     }
 
     /* ========== 基础重置 ========== */
@@ -428,7 +432,7 @@
       z-index: 1;
     }
 
-    @media (hover: hover) and (pointer: fine) {
+    @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
       .comm-item:hover {
         transform: rotate(var(--r, 0deg)) scale(var(--hover-zoom));
         box-shadow: 0 18px 44px rgba(0, 0, 0, 0.3);
@@ -509,7 +513,7 @@
       z-index: 2;
     }
 
-    @media (hover: hover) and (pointer: fine) {
+    @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
       .xingchen-item:hover {
         transform: rotate(var(--r, 0deg)) scale(calc(var(--s, 1) * var(--hover-zoom)));
         box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
@@ -557,7 +561,7 @@
 
     /* 证书悬停放大：改用独立的 translate / scale 属性，
        与 .reveal 入场动画占用的 transform 互不干扰（同用 transform 会互相覆盖） */
-    @media (hover: hover) and (pointer: fine) {
+    @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
       .cert-item:hover {
         translate: 0 -8px;
         scale: var(--hover-zoom);
@@ -794,7 +798,7 @@
       cursor: zoom-in;
       transition: transform 0.35s ease, box-shadow 0.35s ease;
     }
-    @media (hover: hover) and (pointer: fine) {
+    @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
       .film-photo:hover {
         position: relative;
         z-index: 10;
@@ -894,7 +898,7 @@
       cursor: zoom-in;
       transition: transform 0.35s ease, box-shadow 0.35s ease;
     }
-    @media (hover: hover) and (pointer: fine) {
+    @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
       .contest-image img:hover {
         position: relative;
         z-index: 10;
@@ -928,6 +932,24 @@
     @keyframes typewriter-blink {
       0%, 50% { opacity: 1; }
       51%, 100% { opacity: 0; }
+    }
+    /* 竖屏（≤768px）：图片在上并撑满整行，文字移到下方。
+       两点必须一并覆盖，否则会出问题：
+       1) flex 主轴改为纵向后，原来的 flex-basis（图片 540px / 文字 0）会作用到「高度」上，
+          会把图片容器撑成 540px 高、把文字容器压成 0 高，所以统一改回 flex: 0 0 auto；
+       2) DOM 顺序是「文字 → 图片」，要让图片在上就得用 column-reverse，
+          不能改 DOM 顺序——横屏的「左文右图」正是依赖这个顺序。 */
+    @media (max-width: 768px) {
+      .contest-layout {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        gap: 20px;
+      }
+      .contest-image,
+      .contest-text {
+        flex: 0 0 auto;
+        width: 100%;
+      }
     }
     @media (max-width: 640px) {
       .contest-line-1 { font-size: 40px; }
@@ -2386,7 +2408,11 @@
       return ((x % f.copyW) + f.copyW) % f.copyW - f.copyW;
     }
 
-    // 边缘虚化：遮住过半才开始虚化，全遮住 6px，露出过半为 0，中间线性
+    // 边缘虚化：遮住过半才开始虚化，全遮住 FILM_EDGE_BLUR_MAX px，露出过半为 0，中间线性
+    // 强度演变：6px（初版）→ 2.4px（削弱 60%）→ 1.44px（以 2.4 为基准再削弱 40%）
+    //           → 1.584px（以 1.44 为基准加强 10%）。
+    // 调强度只需改这一个系数。
+    const FILM_EDGE_BLUR_MAX = 1.584;
     function blurEdges(f) {
       const pitch = f.cellW + f.gap;
       for (let i = 0; i < f.cells.length; i++) {
@@ -2398,7 +2424,7 @@
         else if (left < 0) hidden = -left / f.cellW;
         else if (right > f.w) hidden = (right - f.w) / f.cellW;
         else hidden = 0;
-        const b = hidden > 0.5 ? 6 * (hidden - 0.5) / 0.5 : 0;
+        const b = hidden > 0.5 ? FILM_EDGE_BLUR_MAX * (hidden - 0.5) / 0.5 : 0;
         if (Math.abs(b - (cell._blur || 0)) > 0.08) {
           cell._blur = b;
           cell.style.filter = b ? "blur(" + b.toFixed(2) + "px)" : "";
