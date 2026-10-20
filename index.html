@@ -1425,6 +1425,29 @@
       object-fit: cover;
     }
 
+    /* ========== 页脚（ICP 备案信息） ========== */
+    .site-footer {
+      padding: 26px 5% 44px;
+      text-align: center;
+      font-size: 14px;
+      letter-spacing: 1px;
+      line-height: 1.9;
+      color: rgba(255, 255, 255, 0.88);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    }
+
+    .site-footer a {
+      color: rgba(255, 255, 255, 0.88);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .site-footer a:hover {
+      color: #ffffff;
+      border-color: #ffffff;
+    }
+
     /* ========== 响应式 ========== */
     /* ========== 滚动浮动效果 ========== */
     .reveal {
@@ -2027,6 +2050,16 @@
       </div>
     </div>
   </section>
+
+  <!-- ========== 页脚：ICP 备案信息 ==========
+       备案号：粤ICP备2026160874号（备案订单号 30179126532212638）。
+       公安联网备案完成后，启用下面注释里的「公网安备」一行并填入号码即可。 -->
+  <footer class="site-footer">
+    <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">粤ICP备2026160874号</a>
+    <!-- 公安联网备案完成后启用（把 recordcode 换成公安下发的备案号，并改好链接文字）：
+    <a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=XXXXXXXXXX" target="_blank" rel="noopener">粤公网安备XXXXXXXXXX号</a>
+    -->
+  </footer>
 
   <!-- ========== 灯箱 ========== -->
   <div class="lightbox" id="lightbox">
