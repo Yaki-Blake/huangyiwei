@@ -1448,6 +1448,31 @@
       border-color: #ffffff;
     }
 
+    /* ICP 号与公安号并列时需要留白，否则两段文字会直接粘连。
+       用 :not(:last-child) 的 margin-right 而非分隔符字符，避免在窄屏换行时
+       分隔符跟着跑到行首。 */
+    .site-footer a:not(:last-child) {
+      margin-right: 14px;
+    }
+
+    /* 竖屏：两个备案号加起来约 30 个字符，窄屏放不下，
+       挤在一行会把「粤公网安备…号」截断折行。
+       改为 flex 列布局，两个号各占一行、各自居中。
+       断点 768px 与项目其余竖屏规则保持一致。 */
+    @media (max-width: 768px) {
+      .site-footer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .site-footer a {
+        display: block;
+        margin-right: 0;
+      }
+    }
+
     /* ========== 响应式 ========== */
     /* ========== 滚动浮动效果 ========== */
     .reveal {
@@ -2051,14 +2076,14 @@
     </div>
   </section>
 
-  <!-- ========== 页脚：ICP 备案信息 ==========
-       备案号：粤ICP备2026160874号（备案订单号 30179126532212638）。
-       公安联网备案完成后，启用下面注释里的「公网安备」一行并填入号码即可。 -->
+  <!-- ========== 页脚：备案信息 ==========
+       ICP 备案：粤ICP备2026160874号（备案订单号 30179126532212638）。
+       公安联网备案：粤公网安备44090402441332号，审核通过时间 2026-10-20。
+       说明：beian.gov.cn/portal/registerSystemInfo 现已 301 跳转至 beian.mps.gov.cn，
+       直接使用 mps 域名可少一跳、也更稳定；协议须为 https，否则开启强制 HTTPS 后会被判为混合内容。 -->
   <footer class="site-footer">
     <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">粤ICP备2026160874号</a>
-    <!-- 公安联网备案完成后启用（把 recordcode 换成公安下发的备案号，并改好链接文字）：
-    <a href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=XXXXXXXXXX" target="_blank" rel="noopener">粤公网安备XXXXXXXXXX号</a>
-    -->
+    <a href="https://beian.mps.gov.cn/#/query/webSearch?code=44090402441332" target="_blank" rel="noopener">粤公网安备44090402441332号</a>
   </footer>
 
   <!-- ========== 灯箱 ========== -->
