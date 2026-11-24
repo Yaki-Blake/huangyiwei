@@ -951,10 +951,205 @@
         width: 100%;
       }
     }
+    /* 本节标题到分析图的留白略收：从导航直接跳到「竞赛项目」时，主图 + 图注仍能一屏看完 */
+    #contest .section-title {
+      margin-bottom: 28px;
+    }
     @media (max-width: 640px) {
       .contest-line-1 { font-size: 40px; }
       .contest-line-2 { font-size: 20px; }
       .contest-line-3 { font-size: 18px; }
+    }
+
+    /* ========== 竞赛辅助分析图（本节最前面） ========== */
+    /* 三张图都是赛前仿真 / 赛后诊断导出的 SVG，已按 viewBox 裁掉多余留白与长注释，
+       只留最关键的图形区域；点击可进灯箱看原尺寸细节。 */
+    .contest-analysis {
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto 64px;
+    }
+    .analysis-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      color: var(--primary-blue);
+      margin-bottom: 8px;
+    }
+    .analysis-eyebrow::after {
+      content: "";
+      flex: 1 1 auto;
+      height: 1px;
+      background: linear-gradient(to right, rgba(21, 101, 192, 0.26), rgba(21, 101, 192, 0));
+    }
+    .analysis-lead {
+      font-size: 19px;
+      line-height: 1.65;
+      color: var(--text-dark);
+      margin-bottom: 14px;
+      max-width: 880px;
+    }
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 26px;
+      align-items: start;
+    }
+    .analysis-item {
+      margin: 0;
+      min-width: 0;
+    }
+    .analysis-item-wide {
+      grid-column: 1 / -1;
+      justify-self: center;
+      width: 100%;
+      /* 主图不再撑满 1100px，且宽度同时受视口高度约束（86vh ≈ 图高的 1.4 倍，即图本身高度约 61vh；视口足够高时上限 740px）：
+         这样不管窗口多矮，「主图 + 它的图注」都能落在同一屏里。 */
+      max-width: min(740px, 82vh);
+    }
+    .analysis-media {
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 6px 26px rgba(13, 42, 84, 0.12), 0 0 0 1px rgba(13, 42, 84, 0.07);
+      transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 0.4s ease;
+    }
+    .analysis-media img {
+      display: block;
+      width: 100%;
+      height: auto;
+      cursor: zoom-in;
+    }
+    /* 下面两张小图按同一比例取景，保证两张卡片等高、图注齐平 */
+    .analysis-media-fit { aspect-ratio: 1.42; }
+    .analysis-media-fit img {
+      height: 100%;
+      object-fit: contain;
+    }
+    @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
+      .analysis-item:hover .analysis-media {
+        transform: translateY(-6px);
+        box-shadow: 0 18px 46px rgba(13, 42, 84, 0.2), 0 0 0 1px rgba(13, 42, 84, 0.07);
+      }
+    }
+    .analysis-cap {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      margin-top: 16px;
+      font-size: 15px;
+      line-height: 1.62;
+      color: var(--text-gray);
+    }
+    .analysis-num {
+      flex: 0 0 auto;
+      font-weight: 700;
+      color: var(--primary-blue);
+      font-variant-numeric: tabular-nums;
+    }
+    .analysis-cap b {
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+    .analysis-hint {
+      margin-top: 22px;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      color: rgba(85, 85, 85, 0.62);
+    }
+    @media (max-width: 820px) {
+      .contest-analysis { margin-bottom: 44px; }
+      .analysis-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+      .analysis-lead { font-size: 17px; margin-bottom: 24px; }
+      .analysis-cap { font-size: 14px; }
+      .analysis-media-fit { aspect-ratio: auto; }
+      .analysis-media-fit img { height: auto; }
+    }
+
+    /* ========== 竞赛获奖：证书放两边、打字文字在中间 ========== */
+    /* 这一行比上面那行宽得多，把空间让给两侧竖版证书 */
+    .contest-layout-award {
+      max-width: 1560px;
+      align-items: center;
+      gap: clamp(14px, 1.6vw, 26px);
+    }
+    /* 两侧证书列：显式宽度（不再靠 flex 抢剩余空间）。
+       上一版实测 1440px→480、1920px→514，这里统一收到其 0.91 倍：
+       1440 下 30.8vw ≈ 437、1920 下封顶 468，分别对应 0.910 / 0.910。
+       flex-shrink 允许在 1025–1200 继续收，避免撑破行宽；
+       min-width:0 是必要条件，否则会被图片撑成 min-content。 */
+    .contest-award {
+      flex: 0 1 clamp(190px, 30.8vw, 468px);
+      width: auto;
+      max-width: 468px;
+      min-width: 0;
+      --hover-zoom: 1.06;
+    }
+    .contest-award img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
+      cursor: zoom-in;
+      transition: transform 0.35s ease, box-shadow 0.35s ease;
+    }
+    @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
+      .contest-award img:hover {
+        position: relative;
+        z-index: 10;
+        transform: translateY(-8px) scale(var(--hover-zoom));
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+      }
+    }
+    /* 中间文案列：固定基准宽度，剩余空间全部归两侧证书（证书因此是当前宽度下的上限尺寸）。
+       注意不能用 flex-grow:0 + auto 基准——打字机脚本会先把 textContent 清空，
+       内容宽度归零会让这一列被压成 0 宽。
+       下限 412px 是「证书下放，荣获省级一等奖与国家二等奖」在 22px 下不断行的宽度。 */
+    .contest-text-center {
+      flex: 0 0 clamp(412px, 26vw, 480px);
+      min-width: 0;
+      align-items: center;
+      text-align: center;
+    }
+    .contest-text-center .contest-line-1 { font-size: 46px; }
+    .contest-text-center .contest-line-2 { font-size: 22px; }
+
+    /* 竖屏 / 平板窄幅：文字在上，两张证书并排在下；用显式网格定位，不依赖 DOM 顺序
+       （DOM 顺序是「证书 → 文字 → 证书」，横屏三栏正是靠它）。
+       断点取 1024px：再窄下去两侧证书会把中间文案列压到 200px 以内，标题会断成三行。 */
+    @media (max-width: 1024px) {
+      .contest-layout-award {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        gap: 14px;
+      }
+      .contest-text-center {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        width: 100%;
+      }
+      .contest-award {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        justify-self: stretch;
+      }
+      .contest-award-left { grid-column: 1; grid-row: 2; }
+      .contest-award-right { grid-column: 2; grid-row: 2; }
+    }
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .contest-text-center .contest-line-1 { font-size: 40px; }
+      .contest-text-center .contest-line-2 { font-size: 20px; }
+    }
+    @media (max-width: 768px) {
+      .contest-text-center .contest-line-1 { font-size: 32px; }
+      .contest-text-center .contest-line-2 { font-size: 17px; }
     }
 
     /* 证书栏目现为白底，标题沿用默认主蓝（.section-title） */
@@ -1027,7 +1222,7 @@
 
     /* 「ai软件」板块：说明文字 + GitHub 直达按钮 */
     .soft-desc {
-      max-width: 780px;
+      max-width: 900px;   /* 说明句加了「课表」后一行放不下，放宽到 900 仍居中 */
       margin: 0 auto 22px;
       font-size: 28px;
       line-height: 1.6;
@@ -1036,7 +1231,7 @@
       text-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
     }
     .soft-desc span { display: block; opacity: 0; }   /* 每句一行；默认隐藏，进入视口后逐行浮出 */
-    .soft-desc-brand { font-size: 34px; }      /* SyncBridge 单独用 34px */
+    .soft-desc-brand { font-size: 34px; }      /* 产品名（dida）单独用 34px */
 
     /* 逐行浮动出场：该板块进入视口（.reveal.visible）时触发，三行依次上浮淡入 */
     @keyframes softFloatIn {
@@ -1078,70 +1273,190 @@
       fill: currentColor;
     }
 
-    /* ========== 「ai软件」小板块：4 张横版图 2×2 居左 + 1 张竖版图居右 ========== */
-    .soft-grid {
-      display: flex;
-      align-items: center;      /* 右侧竖版图垂直居中：允许上下留白，不再要求与左侧块等高对齐 */
-      justify-content: center;
-      gap: 24px;                /* 与左侧 2×2 的行列间隔保持一致 */
+    /* ========== 「ai软件」小板块：dida ==========
+       PC 端做成 3D 环形轮播：六张 1630×1070 桌面截图等分排在一个竖轴圆环上，
+       整环先向后推 R 再整体旋转，于是最前面那张落在 z=0（保持原大），左右两侧
+       向后退、随透视自然变小——圆心在图片后方。拖拽可大幅转动，轻点图片切下一张。
+       每张图的名字固定在图正下方，跟着卡片一起转动；手机端三张 1280×2772 竖版截图并排居中。 */
+    .dida-showcase {
       width: 100%;
-      max-width: 1300px;        /* 整体放大：随 section 内容宽度铺开 */
+      max-width: 1180px;
       margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 34px;
     }
-    .soft-grid-left {
+    .dida-group { width: 100%; }
+
+    /* 组标题：只是一行「PC 端 / 手机端」+ 渐隐细线，不附加说明文字 */
+    .dida-group-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 0 0 14px;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 15px;
+      letter-spacing: 3px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    }
+    .dida-group-head::after {
+      content: "";
       flex: 1 1 auto;
-      min-width: 0;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 24px;                /* 2×2 的行列间隔一致 */
-      position: relative;
-      left: -50px;              /* 整体向左移动 50px（纯视觉位移，不参与 flex 尺寸计算） */
+      min-width: 40px;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
     }
-    /* 照片框：4 张横版（16:9）+ 1 张竖版（3:4），统一圆角 / 阴影 / 裁剪 */
-    .soft-slot {
+
+    /* 图框：圆角 + 向下投影；每张图的名字固定在图的正下方，跟着卡片一起转动 */
+    .dida-tile {
+      position: relative;
+      display: block;
+      margin: 0;
+      min-width: 0;
+      transition: transform 0.35s ease;
+    }
+    .dida-frame {
+      position: relative;
       display: block;
       width: 100%;
-      min-width: 0;   /* 关键：img 作为 flex/grid 项时，min-width:auto 会被 width:100% 撑成整行宽（竖版图曾被撑到 1100×1467），必须归零 */
-      object-fit: cover;
       border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-      cursor: zoom-in;          /* 点击可全屏查看（灯箱） */
-      transition: transform 0.35s ease, box-shadow 0.35s ease;
+      overflow: hidden;
+      background: #F4F6F5;      /* 截图自带浅灰底，预留同色底避免圆角边缘透出白边 */
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
+      transition: box-shadow 0.35s ease;
     }
-    .soft-slot-h { aspect-ratio: 16 / 9; }              /* 横版位 */
-    /* 竖版位：aspect-ratio 取 8.jpg 的原始比例（1280:2772 = 320:693），保证整张图完整显示、不被裁切。
-       宽度占 20.5% 是解方程反推出来的：令竖版图高度 = 左侧 2×2 块高度（即上下边缘完全对齐），
-       解 V 得 V ≈ 0.205 × 容器宽（1282px 时为 263px，高 570px，恰与左侧块齐平）。 */
-    .soft-slot-v { flex: 0 0 20.5%; aspect-ratio: 1280 / 2772; }
+    .dida-frame img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      object-fit: cover;        /* 框的宽高比取自源图，实际不裁不拉 */
+      -webkit-user-drag: none;  /* 环形拖拽时不要把图片本身拖成系统拖影 */
+      user-select: none;
+    }
+    .dida-name {
+      display: table;               /* 收缩到文字宽度，靠 margin auto 居中在图下方 */
+      margin: 10px auto 0;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(8, 20, 14, 0.55);
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.4;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.94);
+    }
 
-    /* 这 5 张图的悬停效果：跟其他板块一样上浮 8px，但不做放大 */
+    /* ---------- PC 端：环形轮播（伪 3D）----------
+       六张图沿一个竖轴圆环排开（每格 60°），越靠后越小、越暗、越往上抬；
+       圆心在正面那张的后方，所以转到最前面的那张正好在最前、保持原大。
+       尺寸/位移/缩放由脚本算好后写成 2D transform + z-index（不用 preserve-3d 的自动排序，
+       避免真实浏览器里按 DOM 顺序绘制、把两侧的卡盖到正面卡上面）。
+       每张图的名字固定在图下方、跟着卡片一起转。拖拽可大幅转动，点两侧的图可切换。 */
+    .dida-ring-stage {
+      --dida-w: clamp(336px, 48vw, 648px);   /* 原 clamp(280px,40vw,540px) 的 1.2 倍 */
+      position: relative;
+      width: 100%;
+      height: calc(var(--dida-w) * 0.6564 + 66px);
+      perspective: calc(var(--dida-w) * 2.55);   /* 只用来让 rotateY 产生侧向透视 */
+      perspective-origin: 50% 46%;
+      overflow: hidden;                        /* 转到侧后方的边角裁掉，不产生横向滚动条 */
+      touch-action: pan-y;                     /* 横拖转圆环，竖滑照常滚页面 */
+      cursor: grab;
+    }
+    .dida-ring-stage.dragging { cursor: grabbing; }
+
+    /* 宽屏给圆环多借一点横向空间，半径大一点两侧的图才不会挤在一起 */
+    @media (min-width: 641px) {
+      .dida-ring-stage { width: calc(100% + 96px); margin-left: -48px; }
+    }
+
+    .dida-ring {
+      position: absolute;
+      inset: 0;
+    }
+
+    .dida-ring-item {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: var(--dida-w);
+      height: fit-content;          /* 不撑满轨道，图 + 名字整体在圆环里垂直居中 */
+      backface-visibility: hidden;
+      cursor: pointer;
+      /* 转动由脚本逐帧推进（每帧同时更新位置和层级），这里不加 CSS transition，
+         否则 transform 会被二次插值，切换时反而糊 */
+    }
+    .dida-ring-item.is-front { cursor: default; }
+    .dida-ring-item .dida-frame { aspect-ratio: 1630 / 1070; }
+    /* 正对镜头那张加一圈细高光，明确“当前看的是它” */
+    .dida-ring-item.is-front .dida-frame {
+      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.5);
+    }
+    /* 名字跟着一起压暗，越靠后越淡 */
+    .dida-ring-item .dida-name { opacity: calc(1 - var(--dim, 0) * 0.8); }
+
+    /* 侧面 / 背面压暗，避免六张同时全亮糊成一片 */
+    .dida-veil {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: #06120c;
+      opacity: var(--dim, 0);
+      transition: opacity 0.5s ease;
+      pointer-events: none;
+    }
+
+    /* 手机端：三张竖版截图并排居中 */
+    .dida-phones {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 24px;
+      max-width: 756px;
+      margin: 0 auto;
+    }
+    .dida-phone .dida-frame { aspect-ratio: 1280 / 2772; }
+
+    /* 悬停：手机端三张上浮；环形里的图靠转动，不做位移（否则会打乱 3D 位置） */
     @media (hover: hover) and (pointer: fine) {
-      .soft-slot:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
-        position: relative;
-        z-index: 10;
+      .dida-tile:not(.dida-ring-item):hover { transform: translateY(-8px); }
+      .dida-tile:not(.dida-ring-item):hover .dida-frame {
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
       }
     }
 
+    /* 平板：间距收一点，圆环宽度靠 40vw 自适应 */
     @media (max-width: 900px) {
-      .soft-grid {
-        flex-direction: column;
-      }
-      .soft-grid-left {
-        width: 100%;
-        left: 0;                /* 移动端取消 50px 左移 */
-      }
-      .soft-slot-v {
-        flex: 0 0 auto;
-        width: 40%;
-        max-width: 200px;
-      }
+      .dida-showcase { gap: 28px; }
+      .dida-phones { gap: 18px; }
     }
+
+    /* 手机：圆环缩小；三张手机截图改成横向滑动的长条 */
     @media (max-width: 640px) {
-      .soft-grid,
-      .soft-grid-left {
-        gap: 16px;
+      .dida-showcase { gap: 22px; }
+      .dida-group-head {
+        font-size: 13px;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+      }
+      .dida-frame { border-radius: 8px; }
+      .dida-name { margin-top: 8px; font-size: 11px; letter-spacing: 1px; }
+      .dida-ring-stage {
+        --dida-w: min(76vw, 340px);
+        height: calc(var(--dida-w) * 0.6564 + 58px);
+      }
+      .dida-phones {
+        display: flex;
+        max-width: none;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 8px;
+      }
+      .dida-phone {
+        flex: 0 0 62%;
+        max-width: 240px;
+        scroll-snap-align: start;
       }
     }
 
@@ -1948,28 +2263,97 @@
       </a>
     </div>
 
-    <!-- ai软件：4 个横版照片位（2×2 居左，间隔 24px）+ 1 个竖版照片位（居右、垂直居中上下留白） -->
+    <!-- ai软件：dida（安卓 + PC 双端日历 / 便签 / 闹钟互通） -->
     <div class="work-block work-block-wide work-block-text-center reveal">
       <h3 class="work-title-pill">ai软件</h3>
       <p class="soft-desc">
-        <span class="soft-desc-brand">SyncBridge</span>
-        <span>借助公网服务器或者内网穿透</span>
-        <span>可以让你的手机与电脑实现日历日程与便签的双端互通</span>
+        <span class="soft-desc-brand">dida</span>
+        <span>安卓手机端与 PC 端的课表、日历日程、便签与闹钟，双端互通</span>
+        <span>同步只搬数据，提醒由手机本地排程，断网也照响</span>
       </p>
       <div class="soft-cta">
-        <a class="github-btn" href="https://github.com/Yaki-Blake/SyncBridge" target="_blank" rel="noopener">
+        <a class="github-btn" href="https://github.com/Yaki-Blake/dida" target="_blank" rel="noopener">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
           <span>GitHub</span>
         </a>
       </div>
-      <div class="soft-grid">
-        <div class="soft-grid-left">
-          <img class="soft-slot soft-slot-h zoomable" src="4.png" alt="ai软件作品 1" data-zoom-group="soft" loading="lazy">
-          <img class="soft-slot soft-slot-h zoomable" src="5.png" alt="ai软件作品 2" data-zoom-group="soft" loading="lazy">
-          <img class="soft-slot soft-slot-h zoomable" src="6.png" alt="ai软件作品 3" data-zoom-group="soft" loading="lazy">
-          <img class="soft-slot soft-slot-h zoomable" src="7.png" alt="ai软件作品 4" data-zoom-group="soft" loading="lazy">
+
+      <div class="dida-showcase" id="dida">
+        <!-- PC 端：六张桌面截图绕成一圈（圆心在图片后方），拖拽大幅转动，点图片切下一张 -->
+        <div class="dida-group">
+          <p class="dida-group-head">PC 端</p>
+          <div class="dida-ring-stage">
+            <div class="dida-ring">
+              <figure class="dida-tile dida-ring-item">
+                <div class="dida-frame">
+                  <img src="dida-pc-week.png" alt="dida PC 端课表（第 12 教学周）" loading="lazy">
+                  <span class="dida-veil" aria-hidden="true"></span>
+                </div>
+                <figcaption class="dida-name">周课表</figcaption>
+              </figure>
+              <figure class="dida-tile dida-ring-item">
+                <div class="dida-frame">
+                  <img src="dida-pc-day.png" alt="dida PC 端日视图（时间轴与日出日落配色）" loading="lazy">
+                  <span class="dida-veil" aria-hidden="true"></span>
+                </div>
+                <figcaption class="dida-name">日视图</figcaption>
+              </figure>
+              <figure class="dida-tile dida-ring-item">
+                <div class="dida-frame">
+                  <img src="dida-pc-year.png" alt="dida PC 端年视图（全年日程分布）" loading="lazy">
+                  <span class="dida-veil" aria-hidden="true"></span>
+                </div>
+                <figcaption class="dida-name">年视图</figcaption>
+              </figure>
+              <figure class="dida-tile dida-ring-item">
+                <div class="dida-frame">
+                  <img src="dida-pc-note.png" alt="dida PC 端便签" loading="lazy">
+                  <span class="dida-veil" aria-hidden="true"></span>
+                </div>
+                <figcaption class="dida-name">便签</figcaption>
+              </figure>
+              <figure class="dida-tile dida-ring-item">
+                <div class="dida-frame">
+                  <img src="dida-pc-focus.png" alt="dida PC 端专注（倒计时 / 秒表 / 闹钟）" loading="lazy">
+                  <span class="dida-veil" aria-hidden="true"></span>
+                </div>
+                <figcaption class="dida-name">专注</figcaption>
+              </figure>
+              <figure class="dida-tile dida-ring-item">
+                <div class="dida-frame">
+                  <img src="dida-pc-sync.png" alt="dida PC 端同步与设置" loading="lazy">
+                  <span class="dida-veil" aria-hidden="true"></span>
+                </div>
+                <figcaption class="dida-name">同步设置</figcaption>
+              </figure>
+            </div>
+          </div>
         </div>
-        <img class="soft-slot soft-slot-v zoomable" src="8.jpg" alt="ai软件作品 5" data-zoom-group="soft" loading="lazy">
+
+        <!-- 手机端：三张竖版截图并排居中 -->
+        <div class="dida-group">
+          <p class="dida-group-head">手机端</p>
+          <div class="dida-phones">
+            <figure class="dida-tile dida-phone">
+              <div class="dida-frame">
+                <img class="zoomable" src="dida-app.png" alt="dida 手机端主界面" data-zoom-group="dida" loading="lazy">
+              </div>
+              <figcaption class="dida-name">主界面</figcaption>
+            </figure>
+            <figure class="dida-tile dida-phone">
+              <div class="dida-frame">
+                <img class="zoomable" src="dida-sync.png" alt="dida 手机端同步完成" data-zoom-group="dida" loading="lazy">
+              </div>
+              <figcaption class="dida-name">同步完成</figcaption>
+            </figure>
+            <figure class="dida-tile dida-phone">
+              <div class="dida-frame">
+                <img class="zoomable" src="dida-connect.png" alt="dida 手机端连接与设置" data-zoom-group="dida" loading="lazy">
+              </div>
+              <figcaption class="dida-name">连接设置</figcaption>
+            </figure>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -2024,14 +2408,65 @@
   <!-- ========== 竞赛项目 ========== -->
   <section id="contest" class="section-white">
     <h2 class="section-title reveal">竞赛项目</h2>
+
+    <!-- 竞赛辅助分析图：放在本栏目最前面（赛前仿真 → 赛后诊断 → 控制参数） -->
+    <div class="contest-analysis reveal">
+      <div class="analysis-eyebrow">机器鱼 · 科目一 障碍竞速　赛前仿真与赛后诊断</div>
+      <p class="analysis-lead">14.43s 不是碰出来的：路径先写成仿真，再拿逐帧日志拆开，时间丢在哪一段一目了然。</p>
+      <div class="analysis-grid">
+        <figure class="analysis-item analysis-item-wide">
+          <div class="analysis-media">
+            <img src="contest-analysis/赛道轨迹.svg" alt="科目一障碍竞速运动轨迹俯视图：切线出弯、压平穿门、镜像绕障碍3" class="zoomable" data-zoom-group="contest-analysis" loading="lazy">
+          </div>
+          <figcaption class="analysis-cap">
+            <span class="analysis-num">01</span>
+            <span><b>轨迹规划。</b>切线出弯 → 压平穿门 → 镜像绕障碍 3，整条路径左右点对称；绕柱半径 190mm，柱面净空 33.6mm。</span>
+          </figcaption>
+        </figure>
+        <figure class="analysis-item">
+          <div class="analysis-media analysis-media-fit">
+            <img src="contest-analysis/用时分解.svg" alt="机器鱼用时预算分解：绕柱两弧占 62.6% 的时间，各段实测地速对比 400mm/s 上限" class="zoomable" data-zoom-group="contest-analysis" loading="lazy">
+          </div>
+          <figcaption class="analysis-cap">
+            <span class="analysis-num">02</span>
+            <span><b>用时分解。</b>按速度模型拆开，绕柱两弧合计 9.29s、占 62.6%；其余五段的实测地速已全部贴着 400mm/s 上限。</span>
+          </figcaption>
+        </figure>
+        <figure class="analysis-item">
+          <div class="analysis-media analysis-media-fit">
+            <img src="contest-analysis/摆幅自适应.svg" alt="尾鳍摆幅随转向量自适应对照，以及路径几何自由度扫描带来的模型用时变化" class="zoomable" data-zoom-group="contest-analysis" loading="lazy">
+          </div>
+          <figcaption class="analysis-cap">
+            <span class="analysis-num">03</span>
+            <span><b>摆幅自适应。</b>路径侧已挖无可挖，唯一的旋钮是尾鳍：摆幅从固定值改为 clamp(1.3 × 转向量, 21°, 34°)，转向大就多摆、直道少摆。</span>
+          </figcaption>
+        </figure>
+      </div>
+      <p class="analysis-hint">三张图均可点击，放大到原始分辨率。</p>
+    </div>
+
     <!-- 竞赛记录：左文右图；文字带打字机效果 -->
     <div class="contest-layout reveal">
       <div class="contest-text">
         <p class="contest-line contest-line-1">2026年9月30号</p>
-        <p class="contest-line contest-line-2">在最终自测时，最佳成绩是14.45s，远超去年优秀成绩14.81s，且代码稳定，多次数据方差在1.6</p>
+        <p class="contest-line contest-line-2">在最终自测时，最佳成绩是14.43s，远超去年优秀成绩14.81s，且代码稳定，多次数据方差在1.6</p>
       </div>
       <div class="contest-image">
-        <img src="竞赛2.png" alt="竞赛成绩" class="zoomable" data-zoom-group="contest" loading="lazy">
+        <img src="竞赛2.png" alt="竞赛成绩" class="zoomable" data-zoom-group="contest-result" loading="lazy">
+      </div>
+    </div>
+
+    <!-- 获奖记录（在 9月30号 那部分下面）：证书放两边、打字文案在中间 -->
+    <div class="contest-layout contest-layout-award reveal">
+      <div class="contest-award contest-award-left">
+        <img src="RST省赛一等奖.jpg" alt="第十九届先进机器人及仿真技术大赛 广东赛区一等奖证书" class="zoomable" data-zoom-group="contest" loading="lazy">
+      </div>
+      <div class="contest-text contest-text-center">
+        <p class="contest-line contest-line-1">2026年11月23日</p>
+        <p class="contest-line contest-line-2">证书下放，荣获省级一等奖与国家二等奖</p>
+      </div>
+      <div class="contest-award contest-award-right">
+        <img src="RST国赛二等奖.jpg" alt="第十九届先进机器人及仿真技术大赛 国赛二等奖证书" class="zoomable" data-zoom-group="contest" loading="lazy">
       </div>
     </div>
   </section>
@@ -3262,6 +3697,160 @@
         if (document.hidden) ripples.pause();
         else ripples.play();
       });
+    })();
+  </script>
+  <!-- dida PC 端：环形轮播（拖拽大幅转动，点图片切到下一张） -->
+  <script>
+    (function () {
+      const stage = document.querySelector(".dida-ring-stage");
+      if (!stage) return;
+      const ring = stage.querySelector(".dida-ring");
+      const items = Array.prototype.slice.call(ring.querySelectorAll(".dida-ring-item"));
+      if (!items.length) return;
+
+      const STEP = 360 / items.length;
+      let rot = 0;
+      let rafId = 0;
+      let animFrom = 0;
+      let animTo = 0;
+      let animStart = 0;
+      const ANIM_MS = 0;   // 0 = 不做过渡，点一下就立刻换到下一张
+      let dragging = false;
+      let moved = false;
+      let startX = 0;
+      let startRot = 0;
+
+      // 圆环几何：半径 0.58 倍图宽（图放大后横向偏移收一点，两侧的图才不会被轨道边缘裁掉），
+      // 视角距 P 用来把纵深压成缩放比例（伪 3D，不依赖 preserve-3d 的自动排序）
+      function ringMetrics() {
+        const frame = items[0].querySelector(".dida-frame");
+        const w = parseFloat(window.getComputedStyle(frame || items[0]).width) || 0;
+        return { w: w, R: w * (w < 420 ? 0.80 : 0.86), P: w * 2.55 };   // 手机窄屏半径大一点，两侧的卡才能露出可点的边
+      }
+
+      function render() {
+        const m = ringMetrics();
+        const R = m.R;
+        const P = m.P;
+        items.forEach(function (item, i) {
+          // 该项与正前方的夹角，归一到 (-180, 180]
+          const diff = (((i * STEP + rot + 180) % 360) + 360) % 360 - 180;
+          const abs = Math.abs(diff);
+          // 沿圆环的横坐标 / 纵深：θ=0 时正好在最前面（纵深 0、缩放 1）
+          const rad = (i * STEP + rot) * Math.PI / 180;
+          const z = (Math.cos(rad) - 1) * R;           // 0 ~ -2R，越靠后越小
+          const k = P / (P - z);                       // 透视换算出的缩放（0.69 ~ 1）
+          // 横向铺开用指数 < 1 的曲线：θ 一离开正面就迅速拉开到两侧，
+          // 两张卡换位途中互相盖住的面积因此只剩原来的一半左右
+          const s = Math.sin(rad);
+          const spread = (s < 0 ? -1 : 1) * Math.pow(Math.abs(s), 1.15);
+          const x = spread * R * k;                    // 越靠后越向中间收
+          const y = -(1 - Math.cos(rad)) * R * 0.07 * k;   // 越靠后越往上抬一点点，形成一点螺旋层次
+          // 两侧的卡再额外收一点尺寸：往后退得越多越小，正卡和旁边那张只盖住一小块，
+          // 视觉上像一圈往里退的螺旋，而不是三张图挤在一起
+          const kSide = k * (1 - 0.25 * Math.min(1, abs / STEP));
+          // 侧向倾斜做个封顶：拖到很大的角度时也不会把图折成奇怪的书页状
+          const tilt = diff * 0.55 > 38 ? 38 : (diff * 0.55 < -38 ? -38 : diff * 0.55);
+          item.style.transform = "translate(" + x.toFixed(1) + "px, " + y.toFixed(1) + "px) perspective(" + P.toFixed(0) + "px) scale(" + kSide.toFixed(3) + ") rotateY(" + tilt.toFixed(1) + "deg)";
+          item.style.zIndex = String(Math.round(1000 + z));   // 手动分层：正面永远在两侧的卡上面
+          item.style.setProperty("--dim", Math.min(0.68, abs / 105 * 0.68).toFixed(3));
+          // 严格只留正面 + 左右各一张：一超过一格（60°）就淡出，
+          // 再往后就整张藏掉，免得拖到中间状态时边上冒出被裁掉一半的细条
+          const fade = abs <= STEP ? 1 : Math.max(0, (STEP * 1.3 - abs) / (STEP * 0.3));
+          item.style.opacity = fade.toFixed(3);
+          const hidden = abs > STEP * 1.3;
+          if (hidden) item.style.visibility = "hidden"; else item.style.visibility = "visible";
+          item.style.pointerEvents = (hidden || fade < 0.15) ? "none" : "auto";
+          item.classList.toggle("is-front", abs < STEP / 2 - 0.01);
+        });
+      }
+
+      // 逐帧把 rot 推到目标角度：位置、缩放、朝向、层级一起跟着角度连续变，
+      // 所以卡片互换位置的整个过程里谁压谁始终是对的，不会中途“闪”一下
+      function easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 4);   // 起步即冲、末尾快速收住，0.12s 内就位
+      }
+
+      function animateTo(target) {
+        if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+        if (ANIM_MS <= 0 || Math.abs(target - rot) < 0.01) { rot = target; render(); return; }
+        animFrom = rot;
+        animTo = target;
+        animStart = 0;
+        const step = function (now) {
+          if (!animStart) animStart = now;
+          const p = Math.min(1, (now - animStart) / ANIM_MS);
+          rot = animFrom + (animTo - animFrom) * easeOutCubic(p);
+          render();
+          if (p < 1) {
+            rafId = requestAnimationFrame(step);
+          } else {
+            rafId = 0;
+            rot = animTo;
+            render();
+          }
+        };
+        rafId = requestAnimationFrame(step);
+      }
+
+      function onMove(e) {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        if (Math.abs(dx) > 6) moved = true;
+        rot = startRot + dx * 0.34;      // 拖动阻尼：滑 300px 大约转 100°，可以甩动大幅转
+        render();
+      }
+
+      function onUp() {
+        if (!dragging) return;
+        dragging = false;
+        ring.classList.remove("dragging");
+        stage.classList.remove("dragging");
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
+        animateTo(Math.round(rot / STEP) * STEP);   // 松手吸附到最近一格（同样逐帧回位）
+        setTimeout(function () { moved = false; }, 0);
+      }
+
+      stage.addEventListener("pointerdown", function (e) {
+        if (e.button !== undefined && e.button !== 0) return;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }   // 转的中途按下去就接住，跟手拖
+        dragging = true;
+        moved = false;
+        startX = e.clientX;
+        startRot = rot;
+        ring.classList.add("dragging");
+        stage.classList.add("dragging");
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onUp);
+        window.addEventListener("pointercancel", onUp);
+      });
+
+      // 点图片切换：只有点「不是当前正展示」的那几张（左右两侧的图）才切换，把那一张转到正面；
+      // 点当前正展示的这张本身不响应。
+      stage.addEventListener("click", function (e) {
+        if (moved) {
+          moved = false;
+          e.stopPropagation();
+          e.preventDefault();
+          return;
+        }
+        const fig = e.target.closest(".dida-ring-item");
+        if (!fig) return;
+        e.stopPropagation();
+        e.preventDefault();
+        const i = items.indexOf(fig);
+        if (i < 0) return;
+        const diff = (((i * STEP + rot + 180) % 360) + 360) % 360 - 180;
+        if (Math.abs(diff) < STEP / 2 - 0.01) return;   // 点的是当前正展示的那张 → 不做任何事
+        animateTo(rot - diff);                          // 点的是旁边那张 → 平滑地把它转到正面
+      }, true);
+
+      // 视口变化时重算半径（图宽由 CSS 的 clamp/vw 决定）
+      window.addEventListener("resize", function () { render(); });
+
+      render();
     })();
   </script>
 </body>
