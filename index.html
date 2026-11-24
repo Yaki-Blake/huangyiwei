@@ -969,22 +969,6 @@
       width: 100%;
       margin: 0 auto 64px;
     }
-    .analysis-eyebrow {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      color: var(--primary-blue);
-      margin-bottom: 8px;
-    }
-    .analysis-eyebrow::after {
-      content: "";
-      flex: 1 1 auto;
-      height: 1px;
-      background: linear-gradient(to right, rgba(21, 101, 192, 0.26), rgba(21, 101, 192, 0));
-    }
     .analysis-lead {
       font-size: 19px;
       line-height: 1.65;
@@ -1053,12 +1037,6 @@
     .analysis-cap b {
       font-weight: 700;
       color: var(--text-dark);
-    }
-    .analysis-hint {
-      margin-top: 22px;
-      font-size: 13px;
-      letter-spacing: 0.02em;
-      color: rgba(85, 85, 85, 0.62);
     }
     @media (max-width: 820px) {
       .contest-analysis { margin-bottom: 44px; }
@@ -2411,7 +2389,6 @@
 
     <!-- 竞赛辅助分析图：放在本栏目最前面（赛前仿真 → 赛后诊断 → 控制参数） -->
     <div class="contest-analysis reveal">
-      <div class="analysis-eyebrow">机器鱼 · 科目一 障碍竞速　赛前仿真与赛后诊断</div>
       <p class="analysis-lead">14.43s 不是碰出来的：路径先写成仿真，再拿逐帧日志拆开，时间丢在哪一段一目了然。</p>
       <div class="analysis-grid">
         <figure class="analysis-item analysis-item-wide">
@@ -2442,7 +2419,6 @@
           </figcaption>
         </figure>
       </div>
-      <p class="analysis-hint">三张图均可点击，放大到原始分辨率。</p>
     </div>
 
     <!-- 竞赛记录：左文右图；文字带打字机效果 -->
